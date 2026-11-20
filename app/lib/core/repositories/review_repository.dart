@@ -560,15 +560,6 @@ class ReviewRepository {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ));
-      await db
-          .into(db.mistakeAgainMarks)
-          .insert(MistakeAgainMarksCompanion.insert(
-            id: const Uuid().v4(),
-            questionId: questionId,
-            operationDate: operationDate.value,
-            newCycleNumber: newCycle.cycleNumber,
-            createdAt: DateTime.now(),
-          ));
     });
   }
 
