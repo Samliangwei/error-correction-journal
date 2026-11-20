@@ -181,12 +181,19 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
+
       // 模拟周期已失效（如被再错关闭）
       await db.customStatement(
           'UPDATE review_cycles SET is_active = 0 WHERE question_id = ?',
           [questionId]);
 
-      // 尝试提交
+      // 尝试提交（周期已失效）
       try {
         await reviewRepo.submitScheduledReview(
           questionId: questionId,
@@ -194,6 +201,9 @@ void main() {
           submittedDate: LearningDate.parse('2026-11-20'),
           hasAnswer: true,
           hasConfirmedVerification: false,
+          expectedQuestionVersion: question.version,
+          expectedCycleId: cycle.id,
+          expectedCycleVersion: cycle.version,
           capacityConfirmed: true,
         );
         fail('Should have thrown StateError');
