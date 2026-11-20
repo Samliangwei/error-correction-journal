@@ -26,61 +26,63 @@ class SettingsRepository {
   /// 设置每日目标N（5-50，次日生效）
   ///
   /// 规则：
-  /// - 今日尚未建计划时修改，今日首次计划仍用旧值
-  /// - 明日起使用新值
-  /// - 多次修改，待生效日累积推进
+  /// - 事务内先结转到期的pending
+  /// - 再设置明日生效的新pending
   Future<void> setDailyTargetN(int n) async {
     if (n < 5 || n > 50) {
       throw ArgumentError('Daily target N must be between 5 and 50');
     }
 
-    final settings = await _getOrCreateSettings();
-    final today = LearningDate.today();
-    final tomorrow = today.addDays(1);
+    await db.transaction(() async {
+      final settings = await _getOrCreateSettings();
+      final today = LearningDate.today();
+      final tomorrow = today.addDays(1);
 
-    // 解析现有待生效
-    final currentPendingStr = await db.customSelect(
-      'SELECT daily_target_pending_n, daily_target_effective_from FROM settings WHERE id = ?',
-      variables: [Variable.withInt(settings.id)],
-    ).getSingleOrNull();
+      // 1. 先结转到期的pending
+      final currentData = await db.customSelect(
+        'SELECT daily_target_n, daily_target_pending_n, daily_target_effective_from FROM settings WHERE id = ?',
+        variables: [Variable.withInt(settings.id)],
+      ).getSingleOrNull();
 
-    LearningDate? effectiveFrom;
+      if (currentData != null) {
+        final pendingN = currentData.data['daily_target_pending_n'];
+        final effectiveValue = currentData.data['daily_target_effective_from'];
 
-    if (currentPendingStr != null) {
-      final effectiveValue =
-          currentPendingStr.data['daily_target_effective_from'];
+        if (pendingN != null && effectiveValue != null) {
+          final effectiveFrom = LearningDate.parse(effectiveValue as String);
 
-      if (effectiveValue != null) {
-        effectiveFrom = LearningDate.parse(effectiveValue as String);
+          // 如果待生效日期<=今日，需要结转
+          if (effectiveFrom.value.compareTo(today.value) <= 0) {
+            await db.customStatement('''
+              UPDATE settings 
+              SET daily_target_n = ?,
+                  daily_target_pending_n = NULL,
+                  daily_target_effective_from = NULL,
+                  updated_at = ?
+              WHERE id = ?
+            ''', [
+              pendingN,
+              DateTime.now().millisecondsSinceEpoch,
+              settings.id,
+            ]);
+          }
+        }
       }
-    }
 
-    // 判断生效日期
-    LearningDate newEffectiveFrom;
-    if (effectiveFrom != null &&
-        effectiveFrom.value.compareTo(today.value) > 0) {
-      // 已有待生效且未到期，继承生效日
-      newEffectiveFrom = effectiveFrom;
-    } else {
-      // 新设置或已生效，次日生效
-      newEffectiveFrom = tomorrow;
-    }
-
-    // 更新待生效值
-    await db.customStatement('''
-      UPDATE settings 
-      SET daily_target_pending_n = ?,
-          daily_target_effective_from = ?,
-          daily_target_updated_at = ?,
-          updated_at = ?
-      WHERE id = ?
-    ''', [
-      n,
-      newEffectiveFrom.value,
-      DateTime.now().millisecondsSinceEpoch,
-      DateTime.now().millisecondsSinceEpoch,
-      settings.id,
-    ]);
+      // 2. 设置明日生效的新pending
+      await db.customStatement('''
+        UPDATE settings 
+        SET daily_target_pending_n = ?,
+            daily_target_effective_from = ?,
+            updated_at = ?
+        WHERE id = ?
+      ''', [
+        n,
+        tomorrow.value,
+        DateTime.now().millisecondsSinceEpoch,
+        settings.id,
+      ]);
+    });
   }
 
   /// 获取设置模型
