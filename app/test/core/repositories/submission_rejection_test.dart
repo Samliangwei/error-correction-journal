@@ -23,7 +23,8 @@ void main() {
     planRepo = DailyPlanRepository(db);
     settingsRepo = SettingsRepository(db);
     reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
-    questionRepo = MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
+    questionRepo =
+        MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
   });
 
   tearDown(() async {
@@ -33,9 +34,11 @@ void main() {
   group('问题4：生命周期检查', () {
     test('归档题目：拒绝提交+零写', () async {
       const questionId = 'q1';
-      
+
       // 创建题目和周期
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q1',
@@ -85,8 +88,10 @@ void main() {
 
     test('软删除题目：拒绝提交+零写', () async {
       const questionId = 'q2';
-      
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q2',
@@ -132,8 +137,10 @@ void main() {
 
     test('已掌握k>=4：拒绝提交+零写', () async {
       const questionId = 'q3';
-      
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q3',
@@ -176,8 +183,10 @@ void main() {
 
     test('未到期题目：拒绝提交+零写', () async {
       const questionId = 'q4';
-      
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q4',
@@ -219,8 +228,10 @@ void main() {
   group('问题5：版本校验', () {
     test('题目版本冲突：拒绝提交+零写', () async {
       const questionId = 'q5';
-      
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q5',
@@ -271,8 +282,10 @@ void main() {
 
     test('周期ID冲突（旧周期）：拒绝提交+零写', () async {
       const questionId = 'q6';
-      
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q6',
@@ -321,8 +334,10 @@ void main() {
   group('问题8：事件cycleId关联', () {
     test('成功提交：event.cycleId引用真实cycle.id', () async {
       const questionId = 'q7';
-      
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q7',

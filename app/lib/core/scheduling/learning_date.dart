@@ -30,7 +30,8 @@ class LearningDate {
   static LearningDate parse(String dateStr) {
     // 验证格式
     if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dateStr)) {
-      throw FormatException('Invalid date format: $dateStr. Expected yyyy-MM-dd');
+      throw FormatException(
+          'Invalid date format: $dateStr. Expected yyyy-MM-dd');
     }
     return LearningDate(dateStr);
   }

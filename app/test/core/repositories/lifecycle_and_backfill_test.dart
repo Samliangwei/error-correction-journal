@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:error_journal/core/database/database.dart';
@@ -31,7 +32,12 @@ void main() {
     });
 
     test('首次创建计划：填满min(C,候选数)并验证内容', () async {
-      await settingsRepo.setDailyTargetN(5);
+      // 直接设置当前生效的N=5
+      await db.into(db.settings).insert(SettingsCompanion.insert(
+            dailyTargetN: const Value(5),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
 
       // 创建8个候选题（超过容量）
       for (int i = 0; i < 8; i++) {
@@ -67,7 +73,11 @@ void main() {
     });
 
     test('归档已完成：保留计划成员', () async {
-      await settingsRepo.setDailyTargetN(5);
+      await db.into(db.settings).insert(SettingsCompanion.insert(
+            dailyTargetN: const Value(5),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
 
       // 创建3个题
       for (int i = 0; i < 3; i++) {
@@ -120,7 +130,11 @@ void main() {
     });
 
     test('归档未完成：移出并补位3道候补', () async {
-      await settingsRepo.setDailyTargetN(5);
+      await db.into(db.settings).insert(SettingsCompanion.insert(
+            dailyTargetN: const Value(5),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
 
       // 创建8个题
       for (int i = 0; i < 8; i++) {
@@ -166,7 +180,11 @@ void main() {
     });
 
     test('删除无论是否完成：均移出并补位', () async {
-      await settingsRepo.setDailyTargetN(5);
+      await db.into(db.settings).insert(SettingsCompanion.insert(
+            dailyTargetN: const Value(5),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
 
       // 创建6个题
       for (int i = 0; i < 6; i++) {
@@ -313,7 +331,11 @@ void main() {
     });
 
     test('再错未完成：实际补入别的题', () async {
-      await settingsRepo.setDailyTargetN(5);
+      await db.into(db.settings).insert(SettingsCompanion.insert(
+            dailyTargetN: const Value(5),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
 
       // 创建6个题
       for (int i = 0; i < 6; i++) {

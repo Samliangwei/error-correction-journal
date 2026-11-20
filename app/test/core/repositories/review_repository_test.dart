@@ -32,6 +32,18 @@ void main() {
       const questionId = 'q1';
       final formalizedDate = LearningDate.parse('2026-11-20');
 
+      // 创建题目
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
+
       // When: 创建初始周期
       final cycle = await repo.createInitialCycle(
         questionId: questionId,
@@ -54,6 +66,16 @@ void main() {
 
     test('获取活动周期', () async {
       const questionId = 'q1';
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -70,6 +92,16 @@ void main() {
 
     test('提交复习（事务集成：事件+周期）', () async {
       const questionId = 'q1';
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -115,6 +147,16 @@ void main() {
       const questionId = 'q1';
       final learningDate = LearningDate.parse('2026-11-21');
 
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -160,6 +202,16 @@ void main() {
       final operationDate = LearningDate.parse('2026-11-25');
 
       // Given: 旧周期k2
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -201,6 +253,16 @@ void main() {
       const questionId = 'q1';
       final operationDate = LearningDate.parse('2026-11-25');
 
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -234,6 +296,16 @@ void main() {
       // 注意：内存数据库关闭后数据会丢失
       // 真实文件数据库持久化测试见集成测试
       const questionId = 'q1';
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),

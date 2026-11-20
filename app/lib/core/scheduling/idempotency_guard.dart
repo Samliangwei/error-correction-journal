@@ -68,7 +68,8 @@ class IdempotencyGuard {
     final firstEvent = todayEvents.first;
     return IdempotencyDuplicate(
       existingEvent: firstEvent,
-      reason: '题 $questionId 在 $learningDate 已有有效自评（周期 ${firstEvent.cycleNumber}），'
+      reason:
+          '题 $questionId 在 $learningDate 已有有效自评（周期 ${firstEvent.cycleNumber}），'
           '不能重复提交',
     );
   }
@@ -98,7 +99,8 @@ class IdempotencyGuard {
     final newCycle = todayNewCycles.first;
     return IdempotencyResetToday(
       newCycleNumber: newCycle.cycleNumber,
-      reason: '题 $questionId 在 $operationDate 已执行再次出错（新周期 ${newCycle.cycleNumber}），'
+      reason:
+          '题 $questionId 在 $operationDate 已执行再次出错（新周期 ${newCycle.cycleNumber}），'
           '当日不可再排期自评',
     );
   }

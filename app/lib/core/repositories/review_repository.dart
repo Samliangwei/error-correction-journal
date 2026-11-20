@@ -178,31 +178,70 @@ class ReviewRepository {
     String? expectedCycleId,
   }) async {
     return await db.transaction(() async {
-      // 1. 检查题目生命周期（问题4）和版本（问题5）
+      // 1. 先检查幂等性（同题同日已有成功事件）
+      final existingEvents = await (db.select(db.reviewEvents)
+            ..where((e) =>
+                e.questionId.equals(questionId) &
+                e.learningDate.equals(submittedDate.value)))
+          .get();
+
+      if (existingEvents.isNotEmpty) {
+        final firstEvent = existingEvents.first;
+        final existingDomainEvent = domain.ReviewEvent(
+          questionId: firstEvent.questionId,
+          cycleNumber: firstEvent.cycleNumber,
+          learningDate: LearningDate.parse(firstEvent.learningDate),
+          result: _parseResult(firstEvent.result),
+          kLevelBefore: domain.KLevel.fromValue(firstEvent.kLevelBefore),
+          kLevelAfter: domain.KLevel.fromValue(firstEvent.kLevelAfter),
+          dueDateAfter: firstEvent.dueDateAfter != null
+              ? LearningDate.parse(firstEvent.dueDateAfter!)
+              : null,
+        );
+        return SubmissionDuplicate(existingDomainEvent);
+      }
+
+      // 2. 检查题目生命周期（问题4）和版本（问题5）
       final question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
           .getSingleOrNull();
 
-      // 仅拒绝归档或删除的题目（题目不存在允许，用于测试）
-      if (question != null) {
-        if (question.isArchived) {
-          return SubmissionQuestionInactive(reason: 'Question is archived');
-        }
-        if (question.deletedAt != null) {
-          return SubmissionQuestionInactive(reason: 'Question is deleted');
-        }
-
-        // 检查题目版本（问题5：题目编辑后旧卡失效）
-        if (expectedQuestionVersion != null &&
-            question.version != expectedQuestionVersion) {
-          return SubmissionStaleQuestion(
-            expectedVersion: expectedQuestionVersion,
-            actualVersion: question.version,
-          );
-        }
+      if (question == null) {
+        return SubmissionQuestionInactive(reason: 'Question not found');
+      }
+      if (question.isArchived) {
+        return SubmissionQuestionInactive(reason: 'Question is archived');
+      }
+      if (question.deletedAt != null) {
+        return SubmissionQuestionInactive(reason: 'Question is deleted');
       }
 
-      // 2. 获取当前周期并检查真实周期id（问题5）
+      // 检查题目版本（问题5：题目编辑后旧卡失效）
+      if (expectedQuestionVersion != null &&
+          question.version != expectedQuestionVersion) {
+        return SubmissionStaleQuestion(
+          expectedVersion: expectedQuestionVersion,
+          actualVersion: question.version,
+        );
+      }
+
+      // 3. 检查今日再错标记
+      final mistakeAgainMarks = await (db.select(db.mistakeAgainMarks)
+            ..where((m) =>
+                m.questionId.equals(questionId) &
+                m.operationDate.equals(submittedDate.value)))
+          .get();
+
+      if (mistakeAgainMarks.isNotEmpty) {
+        // 获取新周期号（再错后的活跃周期）
+        final newCycleRow = await (db.select(db.reviewCycles)
+              ..where((c) =>
+                  c.questionId.equals(questionId) & c.isActive.equals(true)))
+            .getSingle();
+        return SubmissionBlockedByMistakeAgain(newCycleRow.cycleNumber);
+      }
+
+      // 4. 获取当前周期并检查真实周期id（问题5）
       final cycleRow = await (db.select(db.reviewCycles)
             ..where((c) =>
                 c.questionId.equals(questionId) & c.isActive.equals(true)))
@@ -242,21 +281,15 @@ class ReviewRepository {
         version: cycleRow.version,
       );
 
-      // 2. 获取今日事件（幂等性）
-      final existingEvents = await getTodayEvents(
-        questionId: questionId,
-        learningDate: submittedDate,
-      );
-
-      // 3. 获取所有周期（再错检查）
+      // 5. 获取所有周期（领域服务需要）
       final allCycles = await _getAllCycles(questionId);
 
-      // 4. 调用领域服务
+      // 6. 调用领域服务（已经过幂等性+生命周期+再错检查）
       final domainResult = ReviewSubmissionService.submitScheduledReview(
         currentCycle: currentCycle,
         result: result,
         submittedDate: submittedDate,
-        existingEvents: existingEvents,
+        existingEvents: const [], // 已在事务开始检查幂等性
         allCycles: allCycles,
         hasAnswer: hasAnswer,
         hasConfirmedVerification: hasConfirmedVerification,

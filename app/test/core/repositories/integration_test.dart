@@ -28,6 +28,16 @@ void main() {
 
     test('旧卡新日：有容量则纳入计划', () async {
       const questionId = 'q1';
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -218,6 +228,16 @@ void main() {
 
     test('再错已完成：保留今日事件和完成身份', () async {
       const questionId = 'q1';
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -265,6 +285,16 @@ void main() {
 
     test('再错未完成：退出计划并补位', () async {
       const questionId = 'q1';
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
+            id: questionId,
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
