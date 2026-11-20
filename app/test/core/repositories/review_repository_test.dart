@@ -141,10 +141,10 @@ void main() {
       expect(events.first.kLevelAfter, 1);
 
       // Then: 周期已更新
-      final cycle = await repo.getActiveCycle(questionId);
-      expect(cycle!.kLevel.value, 1);
-      expect(cycle.dueDate?.value, '2026-11-24');
-      expect(cycle.version, 2); // 版本递增
+      final cycleUpdated = await repo.getActiveCycle(questionId);
+      expect(cycleUpdated!.kLevel.value, 1);
+      expect(cycleUpdated.dueDate?.value, '2026-11-24');
+      expect(cycleUpdated.version, 2); // 版本递增
     });
 
     test('同题同日重复提交（幂等性）', () async {
