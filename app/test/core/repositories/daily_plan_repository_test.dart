@@ -35,12 +35,14 @@ void main() {
     });
 
     test('N必须5-50，边界与超出范围', () async {
+      final tomorrow = LearningDate.today().addDays(1);
+
       // 边界接受
       await settingsRepo.setDailyTargetN(5);
-      expect(await settingsRepo.getDailyTargetN(), 5);
+      expect(await settingsRepo.getDailyTargetNForDate(tomorrow), 5);
 
       await settingsRepo.setDailyTargetN(50);
-      expect(await settingsRepo.getDailyTargetN(), 50);
+      expect(await settingsRepo.getDailyTargetNForDate(tomorrow), 50);
 
       // 超出拒绝
       await expectLater(

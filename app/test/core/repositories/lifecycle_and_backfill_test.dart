@@ -25,13 +25,6 @@ void main() {
       reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
       questionRepo =
           MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
-
-      // 创建默认settings（避免多条记录）
-      await db.into(db.settings).insert(SettingsCompanion.insert(
-            dailyTargetN: const Value(5),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ));
     });
 
     tearDown(() async {
@@ -39,7 +32,11 @@ void main() {
     });
 
     test('首次创建计划：填满min(C,候选数)并验证内容', () async {
-      // setUp已创建N=5的settings
+      // 设置N=5（需要在其他操作前）
+      await settingsRepo.setDailyTargetN(5);
+      // 手动应用到当前生效（测试用）
+      await db.customStatement(
+          'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL WHERE id = 1');
 
       // 创建8个候选题（超过容量）
       for (int i = 0; i < 8; i++) {
@@ -75,6 +72,9 @@ void main() {
     });
 
     test('归档已完成：保留计划成员', () async {
+      await settingsRepo.setDailyTargetN(5);
+      await db.customStatement(
+          'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL WHERE id = 1');
 
       // 创建3个题
       for (int i = 0; i < 3; i++) {
@@ -127,6 +127,9 @@ void main() {
     });
 
     test('归档未完成：移出并补位3道候补', () async {
+      await settingsRepo.setDailyTargetN(5);
+      await db.customStatement(
+          'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL WHERE id = 1');
 
       // 创建8个题
       for (int i = 0; i < 8; i++) {
@@ -172,6 +175,9 @@ void main() {
     });
 
     test('删除无论是否完成：均移出并补位', () async {
+      await settingsRepo.setDailyTargetN(5);
+      await db.customStatement(
+          'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL WHERE id = 1');
 
       // 创建6个题
       for (int i = 0; i < 6; i++) {
@@ -318,6 +324,9 @@ void main() {
     });
 
     test('再错未完成：实际补入别的题', () async {
+      await settingsRepo.setDailyTargetN(5);
+      await db.customStatement(
+          'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL WHERE id = 1');
 
       // 创建6个题
       for (int i = 0; i < 6; i++) {

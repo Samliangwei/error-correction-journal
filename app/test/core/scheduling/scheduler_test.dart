@@ -109,7 +109,8 @@ void main() {
       expect(cycle.dueDate?.value, '2026-11-21');
 
       // 11/21 会了
-      var newK = Scheduler.calculateNextK(currentK: cycle.kLevel, result: ReviewResult.know);
+      var newK = Scheduler.calculateNextK(
+          currentK: cycle.kLevel, result: ReviewResult.know);
       var newDue = Scheduler.calculateNextDue(
         currentK: cycle.kLevel,
         result: ReviewResult.know,
@@ -120,7 +121,8 @@ void main() {
       expect(cycle.dueDate?.value, '2026-11-24');
 
       // 11/24 会了
-      newK = Scheduler.calculateNextK(currentK: cycle.kLevel, result: ReviewResult.know);
+      newK = Scheduler.calculateNextK(
+          currentK: cycle.kLevel, result: ReviewResult.know);
       newDue = Scheduler.calculateNextDue(
         currentK: cycle.kLevel,
         result: ReviewResult.know,
@@ -131,7 +133,8 @@ void main() {
       expect(cycle.dueDate?.value, '2026-12-01');
 
       // 12/01 会了
-      newK = Scheduler.calculateNextK(currentK: cycle.kLevel, result: ReviewResult.know);
+      newK = Scheduler.calculateNextK(
+          currentK: cycle.kLevel, result: ReviewResult.know);
       newDue = Scheduler.calculateNextDue(
         currentK: cycle.kLevel,
         result: ReviewResult.know,
@@ -142,13 +145,15 @@ void main() {
       expect(cycle.dueDate?.value, '2026-12-15');
 
       // 12/15 会了 → k4
-      newK = Scheduler.calculateNextK(currentK: cycle.kLevel, result: ReviewResult.know);
+      newK = Scheduler.calculateNextK(
+          currentK: cycle.kLevel, result: ReviewResult.know);
       newDue = Scheduler.calculateNextDue(
         currentK: cycle.kLevel,
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-12-15'),
       );
-      cycle = cycle.copyWith(kLevel: newK, dueDate: newDue, clearDue: newDue == null);
+      cycle = cycle.copyWith(
+          kLevel: newK, dueDate: newDue, clearDue: newDue == null);
       expect(cycle.kLevel, KLevel.k4);
       expect(cycle.dueDate, isNull);
     });
@@ -205,25 +210,29 @@ void main() {
       );
 
       // 11/25 模糊
-      var newK = Scheduler.calculateNextK(currentK: cycle.kLevel, result: ReviewResult.fuzzy);
+      var newK = Scheduler.calculateNextK(
+          currentK: cycle.kLevel, result: ReviewResult.fuzzy);
       var newDue = Scheduler.calculateNextDue(
         currentK: cycle.kLevel,
         result: ReviewResult.fuzzy,
         submittedDate: LearningDate.parse('2026-11-25'),
       );
-      cycle = cycle.copyWith(kLevel: newK, dueDate: newDue, version: cycle.version + 1);
+      cycle = cycle.copyWith(
+          kLevel: newK, dueDate: newDue, version: cycle.version + 1);
       expect(cycle.kLevel, KLevel.k2);
       expect(cycle.dueDate?.value, '2026-11-26');
       expect(cycle.cycleNumber, 1); // 周期不变
 
       // 11/26 不会
-      newK = Scheduler.calculateNextK(currentK: cycle.kLevel, result: ReviewResult.notKnow);
+      newK = Scheduler.calculateNextK(
+          currentK: cycle.kLevel, result: ReviewResult.notKnow);
       newDue = Scheduler.calculateNextDue(
         currentK: cycle.kLevel,
         result: ReviewResult.notKnow,
         submittedDate: LearningDate.parse('2026-11-26'),
       );
-      cycle = cycle.copyWith(kLevel: newK, dueDate: newDue, version: cycle.version + 1);
+      cycle = cycle.copyWith(
+          kLevel: newK, dueDate: newDue, version: cycle.version + 1);
       expect(cycle.kLevel, KLevel.k0);
       expect(cycle.dueDate?.value, '2026-11-27');
       expect(cycle.cycleNumber, 1); // 周期仍不变（不是再错）

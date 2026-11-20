@@ -44,7 +44,8 @@ void main() {
       // UTC+8应该是 2026-11-20 08:00:00
       final fakeClock = Clock.fixed(DateTime.utc(2026, 11, 20, 0, 0, 0));
 
-      final today = withClock(fakeClock, () => LearningDate.today(clock: fakeClock));
+      final today =
+          withClock(fakeClock, () => LearningDate.today(clock: fakeClock));
 
       expect(today.value, '2026-11-20');
     });
@@ -54,7 +55,8 @@ void main() {
       // UTC+8: 2026-11-21 07:00:00
       final fakeClock = Clock.fixed(DateTime.utc(2026, 11, 20, 23, 0, 0));
 
-      final today = withClock(fakeClock, () => LearningDate.today(clock: fakeClock));
+      final today =
+          withClock(fakeClock, () => LearningDate.today(clock: fakeClock));
 
       expect(today.value, '2026-11-21'); // 次日
     });
@@ -64,7 +66,8 @@ void main() {
       // UTC+8: 2026-11-20 00:00:00
       final fakeClock = Clock.fixed(DateTime.utc(2026, 11, 19, 16, 0, 0));
 
-      final today = withClock(fakeClock, () => LearningDate.today(clock: fakeClock));
+      final today =
+          withClock(fakeClock, () => LearningDate.today(clock: fakeClock));
 
       expect(today.value, '2026-11-20');
     });
