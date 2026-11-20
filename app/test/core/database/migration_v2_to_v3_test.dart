@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:error_journal/core/database/database.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart';
 
 void main() {
   group('数据库迁移 v2→v3', () {
@@ -23,10 +24,10 @@ void main() {
 
     test('v2→v3: 业务键去重，完成优先，保留顺序，外键完整', () async {
       // ===== 阶段1: 创建v2 schema并写入测试数据 =====
-      final v2Db = NativeDatabase(File(dbPath));
+      final v2DbRaw = sqlite3.open(dbPath);
 
       // 创建v2表结构
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         CREATE TABLE mistake_questions (
           id TEXT NOT NULL PRIMARY KEY,
           subject TEXT NOT NULL,
@@ -44,7 +45,7 @@ void main() {
         )
       ''');
 
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         CREATE TABLE review_cycles (
           id TEXT NOT NULL PRIMARY KEY,
           question_id TEXT NOT NULL REFERENCES mistake_questions(id) ON DELETE CASCADE,
@@ -58,7 +59,7 @@ void main() {
         )
       ''');
 
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         CREATE TABLE review_events (
           id TEXT NOT NULL PRIMARY KEY,
           question_id TEXT NOT NULL,
@@ -74,7 +75,7 @@ void main() {
         )
       ''');
 
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         CREATE TABLE daily_plans (
           id TEXT NOT NULL PRIMARY KEY,
           learning_date TEXT NOT NULL UNIQUE,
@@ -86,7 +87,7 @@ void main() {
       ''');
 
       // v2版本没有UNIQUE约束，允许重复
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         CREATE TABLE daily_plan_members (
           id TEXT NOT NULL PRIMARY KEY,
           plan_id TEXT NOT NULL REFERENCES daily_plans(id) ON DELETE CASCADE,
@@ -99,7 +100,7 @@ void main() {
         )
       ''');
 
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         CREATE TABLE settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           daily_target_n INTEGER NOT NULL DEFAULT 20,
@@ -110,33 +111,33 @@ void main() {
       ''');
 
       // 设置user_version=2
-      await v2Db.customStatement('PRAGMA user_version = 2');
+      v2DbRaw.execute('PRAGMA user_version = 2');
 
       // 写入测试数据
       final now = DateTime.now().millisecondsSinceEpoch;
 
       // 题目
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO mistake_questions VALUES
         ('q1', 'Math', 'Q1', 'A1', NULL, NULL, $now, $now, $now, NULL, 0, NULL, 1),
         ('q2', 'Math', 'Q2', 'A2', NULL, NULL, $now, $now, $now, NULL, 0, NULL, 1)
       ''');
 
       // 周期
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO review_cycles VALUES
         ('c1', 'q1', 1, 0, '2026-11-21', 1, 1, $now, $now),
         ('c2', 'q2', 1, 0, '2026-11-21', 1, 1, $now, $now)
       ''');
 
       // 事件
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO review_events VALUES
         ('e1', 'q1', 'c1', 1, '2026-11-20', 'know', 0, 1, '2026-11-24', $now)
       ''');
 
       // 计划
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO daily_plans VALUES
         ('plan1', '2026-11-20', 20, 20, $now, $now)
       ''');
@@ -146,7 +147,7 @@ void main() {
       // - member2: 已完成，order=10，晚创建
       // - member3: 未完成，order=3，中间创建
       // 预期合并后：完成优先→已完成，最早顺序→order=3，稳定id→member1
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO daily_plan_members VALUES
         ('member1', 'plan1', 'q1', 5, 0, 0, ${now - 3000}, ${now - 1000}),
         ('member2', 'plan1', 'q1', 10, 1, 0, ${now - 1000}, $now),
@@ -154,18 +155,18 @@ void main() {
       ''');
 
       // q2无重复
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO daily_plan_members VALUES
         ('member4', 'plan1', 'q2', 15, 0, 0, $now, $now)
       ''');
 
       // 设置
-      await v2Db.customStatement('''
+      v2DbRaw.execute('''
         INSERT INTO settings (daily_target_n, created_at, updated_at)
         VALUES (20, $now, $now)
       ''');
 
-      await v2Db.close();
+      v2DbRaw.dispose();
 
       // ===== 阶段2: 用AppDatabase打开，触发v2→v3升级 =====
       final v3Db = AppDatabase.forTesting(NativeDatabase(File(dbPath)));
