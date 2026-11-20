@@ -1,0 +1,6 @@
+{
+  "name": "Error Journal - Flutter & Python",
+  "user": "ubuntu",
+  "install": "/bin/bash .cursor/install.sh",
+  "start": "/bin/bash .cursor/start.sh"
+}
