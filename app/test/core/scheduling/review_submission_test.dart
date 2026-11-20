@@ -4,6 +4,7 @@ import 'package:error_journal/core/scheduling/review_result.dart';
 import 'package:error_journal/core/scheduling/review_cycle.dart';
 import 'package:error_journal/core/scheduling/review_event.dart';
 import 'package:error_journal/core/scheduling/review_submission.dart';
+import 'package:error_journal/core/scheduling/scheduler.dart';
 
 void main() {
   group('ReviewSubmissionService - 排期复习提交', () {
@@ -61,9 +62,7 @@ void main() {
       );
 
       // Then: 拒绝
-      expect(result, isA<SubmissionMissingAnswer>());
-      final missing = result as SubmissionMissingAnswer;
-      expect(missing.reason, contains('需先确认已自行核验'));
+      expect(result, isA<SubmissionNeedsVerification>());
     });
 
     test('无答案但已确认核验，允许', () {
@@ -160,8 +159,8 @@ void main() {
       );
 
       // Then: 禁止
-      expect(result, isA<SubmissionResetTodayBlocked>());
-      final blocked = result as SubmissionResetTodayBlocked;
+      expect(result, isA<SubmissionBlockedByMistakeAgain>());
+      final blocked = result as SubmissionBlockedByMistakeAgain;
       expect(blocked.newCycleNumber, 2);
     });
 
@@ -187,24 +186,16 @@ void main() {
       );
 
       // Then: 版本冲突
-      expect(result, isA<SubmissionVersionConflict>());
+      expect(result, isA<SubmissionStaleVersion>());
     });
   });
 
-  group('ReviewSubmissionService - 再次出错', () {
+  group('Scheduler - 再次出错', () {
     test('创建新周期k0, due=明日', () {
-      final currentCycle = ReviewCycle(
-        questionId: 'q1',
-        cycleNumber: 1,
-        kLevel: KLevel.k3,
-        dueDate: LearningDate.parse('2026-12-01'),
-        isActive: true,
-        version: 5,
-      );
-
       // When: 再次出错
-      final newCycle = ReviewSubmissionService.markAsMistakeAgain(
-        currentCycle: currentCycle,
+      final newCycle = Scheduler.createNewCycleForMistakeAgain(
+        questionId: 'q1',
+        previousCycleNumber: 1,
         operationDate: LearningDate.parse('2026-11-20'),
       );
 

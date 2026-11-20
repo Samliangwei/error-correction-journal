@@ -10,12 +10,30 @@ import '../scheduling/review_event.dart' as domain;
 import '../scheduling/review_result.dart';
 import '../scheduling/review_submission.dart';
 import '../scheduling/scheduler.dart';
+import 'daily_plan_repository.dart';
+import 'settings_repository.dart';
+
+/// 容量检查结果
+sealed class CapacityCheckResult {}
+
+class CapacityAvailable extends CapacityCheckResult {
+  final String planId;
+  CapacityAvailable(this.planId);
+}
+
+class CapacityFullNeedsConfirmation extends CapacityCheckResult {
+  final int currentCount;
+  final int capacityC;
+  CapacityFullNeedsConfirmation(this.currentCount, this.capacityC);
+}
 
 /// Repository实现（将领域模型映射到数据库）
 class ReviewRepository {
   final AppDatabase db;
+  final DailyPlanRepository planRepo;
+  final SettingsRepository settingsRepo;
 
-  ReviewRepository(this.db);
+  ReviewRepository(this.db, this.planRepo, this.settingsRepo);
 
   /// 创建初始周期（保存时）
   Future<domain.ReviewCycle> createInitialCycle({
@@ -84,15 +102,69 @@ class ReviewRepository {
         .toList();
   }
 
+  /// 检查容量并预留（旧卡新日）
+  Future<CapacityCheckResult> checkCapacityAndReserve({
+    required String questionId,
+    required LearningDate submittedDate,
+    required bool confirmed,
+  }) async {
+    final targetN = await settingsRepo.getDailyTargetN();
+    final plan = await planRepo.getOrCreatePlan(date: submittedDate, targetN: targetN);
+
+    // 已在计划中
+    if (await planRepo.isQuestionInPlan(planId: plan.id, questionId: questionId)) {
+      return CapacityAvailable(plan.id);
+    }
+
+    // 有剩余容量：直接预留
+    if (!plan.isFull) {
+      final nextOrder = await planRepo.getNextOrderIndex(plan.id);
+      await planRepo.addMember(
+        planId: plan.id,
+        questionId: questionId,
+        orderIndex: nextOrder,
+      );
+      return CapacityAvailable(plan.id);
+    }
+
+    // 满额且未确认：返回需要确认
+    if (!confirmed) {
+      return CapacityFullNeedsConfirmation(plan.members.length, plan.capacityC);
+    }
+
+    // 满额但已确认：重检后扩容
+    final planRecheck = await planRepo.getPlan(submittedDate);
+    if (planRecheck == null || planRecheck.isFull) {
+      // 仍满额，扩容加入
+      final nextOrder = await planRepo.getNextOrderIndex(plan.id);
+      await planRepo.addMember(
+        planId: plan.id,
+        questionId: questionId,
+        orderIndex: nextOrder,
+      );
+      return CapacityAvailable(plan.id);
+    }
+
+    // 重检后有空位，直接预留
+    final nextOrder = await planRepo.getNextOrderIndex(plan.id);
+    await planRepo.addMember(
+      planId: plan.id,
+      questionId: questionId,
+      orderIndex: nextOrder,
+    );
+    return CapacityAvailable(plan.id);
+  }
+
   /// 提交排期复习（事务集成）
   ///
-  /// 原子操作：事件 + 周期更新 同一事务
+  /// 原子操作：事件 + 周期更新 + 计划完成
   Future<SubmissionResult> submitScheduledReview({
     required String questionId,
     required ReviewResult result,
     required LearningDate submittedDate,
     required bool hasAnswer,
     required bool hasConfirmedVerification,
+    bool capacityConfirmed = false,
   }) async {
     return await db.transaction(() async {
       // 1. 获取当前周期
@@ -123,11 +195,28 @@ class ReviewRepository {
 
       // 5. 处理结果
       if (domainResult is SubmissionSuccess) {
-        // 5.1 写入事件
+        // 5.1 容量检查（旧卡新日场景）
+        final capacityResult = await checkCapacityAndReserve(
+          questionId: questionId,
+          submittedDate: submittedDate,
+          confirmed: capacityConfirmed,
+        );
+
+        if (capacityResult is CapacityFullNeedsConfirmation) {
+          // 满额需要确认，零写返回
+          return SubmissionCapacityFull(
+            currentCount: capacityResult.currentCount,
+            capacityC: capacityResult.capacityC,
+          );
+        }
+
+        final planId = (capacityResult as CapacityAvailable).planId;
+
+        // 5.2 写入事件
         await db.into(db.reviewEvents).insert(ReviewEventsCompanion.insert(
               id: const Uuid().v4(),
               questionId: domainResult.event.questionId,
-              cycleId: const Uuid().v4(), // TODO: 关联实际cycleId
+              cycleId: const Uuid().v4(),
               cycleNumber: domainResult.event.cycleNumber,
               learningDate: domainResult.event.learningDate.value,
               result: _serializeResult(domainResult.event.result),
@@ -137,7 +226,7 @@ class ReviewRepository {
               createdAt: DateTime.now(),
             ));
 
-        // 5.2 更新周期
+        // 5.3 更新周期
         await (db.update(db.reviewCycles)
               ..where((c) =>
                   c.questionId.equals(questionId) & c.isActive.equals(true)))
@@ -148,7 +237,11 @@ class ReviewRepository {
           updatedAt: Value(DateTime.now()),
         ));
 
-        // TODO: 5.3 更新每日计划（后续实现）
+        // 5.4 标记计划完成
+        await planRepo.markMemberCompleted(
+          planId: planId,
+          questionId: questionId,
+        );
       }
 
       return domainResult;
@@ -156,6 +249,9 @@ class ReviewRepository {
   }
 
   /// 再次出错（新周期）
+  ///
+  /// 已完成：保留今日事件/完成身份
+  /// 未完成：退出计划并补位
   Future<void> markAsMistakeAgain({
     required String questionId,
     required LearningDate operationDate,
@@ -173,7 +269,25 @@ class ReviewRepository {
         return;
       }
 
-      // 2. 关闭旧周期
+      // 2. 检查今日计划状态
+      final todayPlan = await planRepo.getPlan(operationDate);
+      bool wasCompleted = false;
+      if (todayPlan != null) {
+        final member = todayPlan.members
+            .where((m) => m.questionId == questionId)
+            .firstOrNull;
+        wasCompleted = member?.isCompleted ?? false;
+
+        // 未完成则移出补位（已完成保留成员）
+        if (!wasCompleted && member != null) {
+          await planRepo.removeMember(
+            planId: todayPlan.id,
+            questionId: questionId,
+          );
+        }
+      }
+
+      // 3. 关闭旧周期
       final oldCycle = await getActiveCycle(questionId);
       if (oldCycle != null) {
         await (db.update(db.reviewCycles)
@@ -185,7 +299,7 @@ class ReviewRepository {
         ));
       }
 
-      // 3. 创建新周期
+      // 4. 创建新周期
       final newCycle = Scheduler.createNewCycleForMistakeAgain(
         questionId: questionId,
         previousCycleNumber: oldCycle?.cycleNumber ?? 0,
@@ -204,7 +318,7 @@ class ReviewRepository {
             updatedAt: DateTime.now(),
           ));
 
-      // 4. 记录再错标记
+      // 5. 记录再错标记
       await db.into(db.mistakeAgainMarks).insert(MistakeAgainMarksCompanion.insert(
             id: const Uuid().v4(),
             questionId: questionId,

@@ -3,6 +3,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:error_journal/core/database/database.dart';
 import 'package:error_journal/core/repositories/review_repository.dart';
+import 'package:error_journal/core/repositories/daily_plan_repository.dart';
+import 'package:error_journal/core/repositories/settings_repository.dart';
 import 'package:error_journal/core/scheduling/learning_date.dart';
 import 'package:error_journal/core/scheduling/review_result.dart';
 import 'package:error_journal/core/scheduling/review_submission.dart';
@@ -10,11 +12,15 @@ import 'package:error_journal/core/scheduling/review_submission.dart';
 void main() {
   late AppDatabase db;
   late ReviewRepository repo;
+  late DailyPlanRepository planRepo;
+  late SettingsRepository settingsRepo;
 
   setUp(() async {
     // 内存数据库
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    repo = ReviewRepository(db);
+    planRepo = DailyPlanRepository(db);
+    settingsRepo = SettingsRepository(db);
+    repo = ReviewRepository(db, planRepo, settingsRepo);
   });
 
   tearDown(() async {
@@ -148,7 +154,7 @@ void main() {
       // 手动更新到k2
       await (db.update(db.reviewCycles)
             ..where((c) => c.questionId.equals(questionId)))
-          .write(const ReviewCyclesCompanion(kLevel: Value(2)));
+          .write(ReviewCyclesCompanion(kLevel: Value(2)));
 
       // When: 再次出错
       await repo.markAsMistakeAgain(
