@@ -155,7 +155,7 @@ void main() {
 
       // 验证计划成员
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
-      expect(plan, isNotNull);
+      expect(plan != null, true);
       expect(plan!.capacityC, 5);
 
       final members = plan.members;
