@@ -199,7 +199,7 @@ class AppDatabase extends _$AppDatabase {
         }
 
         if (from == 2 && to == 3) {
-          // v2→v3: 添加唯一约束 + settings pending字段
+          // v2→v3: 添加唯一约束 + settings pending字段 + 业务去重
           // 1. 重建daily_plan_members表
           await customStatement('''
             CREATE TABLE daily_plan_members_new (
@@ -215,9 +215,27 @@ class AppDatabase extends _$AppDatabase {
             )
           ''');
 
+          // 业务键确定性合并：
+          // - 完成优先：MAX(is_completed)保持已完成身份
+          // - 最早顺序：MIN(order_index)保留合理顺序
+          // - 稳定id：MIN(id)选择字典序最小的id
+          // - 保留最早created_at和最新updated_at
           await customStatement('''
-            INSERT INTO daily_plan_members_new 
-            SELECT DISTINCT * FROM daily_plan_members
+            INSERT INTO daily_plan_members_new (
+              id, plan_id, question_id, order_index, 
+              is_completed, is_skipped, created_at, updated_at
+            )
+            SELECT 
+              MIN(id) as id,
+              plan_id,
+              question_id,
+              MIN(order_index) as order_index,
+              MAX(is_completed) as is_completed,
+              MAX(is_skipped) as is_skipped,
+              MIN(created_at) as created_at,
+              MAX(updated_at) as updated_at
+            FROM daily_plan_members
+            GROUP BY plan_id, question_id
           ''');
 
           await customStatement('DROP TABLE daily_plan_members');
