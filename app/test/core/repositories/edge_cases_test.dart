@@ -240,8 +240,8 @@ void main() {
         expectedCycleId: firstCycleId, // 旧周期ID
       );
 
-      // 验证：被禁止
-      expect(result, isA<SubmissionBlockedByMistakeAgain>());
+      // 验证：旧周期被拒绝（版本检查优先于再错检查）
+      expect(result, isA<SubmissionStaleCycle>());
 
       // 验证：零写（未创建事件）
       final events = await db.select(db.reviewEvents).get();
