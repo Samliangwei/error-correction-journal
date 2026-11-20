@@ -177,12 +177,13 @@ void main() {
         ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
       final orderedIds = sortedMembers.map((m) => m.questionId).toList();
 
-      // q-old最早due应排最前
-      expect(orderedIds[0], 'q-old');
-      // 然后是相同due的三个，按q.id ASC
-      expect(orderedIds[1], 'q-aaa');
-      expect(orderedIds[2], 'q-mmm');
-      expect(orderedIds[3], 'q-zzz');
+      // 已提交的题目按提交顺序：q-existing, q-old
+      expect(orderedIds[0], 'q-existing');
+      expect(orderedIds[1], 'q-old');
+      // 补位候选按due+created+id排序：q-aaa最小
+      expect(orderedIds[2], 'q-aaa');
+      expect(orderedIds[3], 'q-mmm');
+      expect(orderedIds[4], 'q-zzz');
     });
   });
 }
