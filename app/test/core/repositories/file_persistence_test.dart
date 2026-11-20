@@ -18,13 +18,13 @@ void main() {
       tempPath = '${Directory.systemTemp.path}/test_db_${DateTime.now().millisecondsSinceEpoch}.sqlite';
     });
 
-    tearDown() {
+    tearDown(() {
       // 清理文件
       final file = File(tempPath);
       if (file.existsSync()) {
         file.deleteSync();
       }
-    });
+    }););
 
     test('关闭重开：完整状态持久化', () async {
       // === 第一次打开数据库：写入数据 ===
