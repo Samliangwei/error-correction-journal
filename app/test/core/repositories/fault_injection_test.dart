@@ -242,28 +242,56 @@ void main() {
             ..where((c) => c.questionId.equals('q1')))
           .write(const ReviewCyclesCompanion(kLevel: Value(2)));
 
-      // 注入故障（在事务内部模拟，这里简化测试，只验证最终一致性）
-      // 由于markAsMistakeAgain使用db.transaction，故障会导致回滚
+      // 记录故障前状态
+      final cyclesBeforeFault = await db.select(db.reviewCycles).get();
+      final marksBeforeFault = await db.select(db.mistakeAgainMarks).get();
+      expect(cyclesBeforeFault.length, 1);
+      expect(marksBeforeFault.length, 0);
 
-      // 正常执行再错操作
+      // 注入故障：再错标记插入后抛错
+      reviewRepo.faultInjection.afterMistakeAgainInsert = () {
+        throw Exception('Injected fault after mistake again mark insert');
+      };
+
+      // 尝试执行再错操作（应该失败）
+      try {
+        await reviewRepo.markAsMistakeAgain(
+          questionId: 'q1',
+          operationDate: LearningDate.parse('2026-11-25'),
+        );
+        fail('Should have thrown');
+      } catch (e) {
+        expect(e.toString(), contains('Injected fault'));
+      }
+
+      // 验证：全部回滚，状态不变
+      final cyclesAfterFault = await db.select(db.reviewCycles).get();
+      final marksAfterFault = await db.select(db.mistakeAgainMarks).get();
+      expect(cyclesAfterFault.length, 1, reason: '周期数应保持1个');
+      expect(cyclesAfterFault.first.isActive, true, reason: '旧周期应仍然活跃');
+      expect(cyclesAfterFault.first.cycleNumber, 1, reason: '周期号应保持1');
+      expect(marksAfterFault.length, 0, reason: '再错标记应未写入');
+
+      // 清除故障，重试成功
+      reviewRepo.faultInjection.reset();
+
       await reviewRepo.markAsMistakeAgain(
         questionId: 'q1',
         operationDate: LearningDate.parse('2026-11-25'),
       );
 
-      // 验证：旧周期关闭，新周期创建
+      // 验证：重试成功
       final allCycles = await (db.select(db.reviewCycles)
             ..where((c) => c.questionId.equals('q1')))
           .get();
-      expect(allCycles.length, 2);
+      expect(allCycles.length, 2, reason: '应有2个周期');
 
       final activeCycle = allCycles.firstWhere((c) => c.isActive);
-      expect(activeCycle.cycleNumber, 2);
-      expect(activeCycle.kLevel, 0);
+      expect(activeCycle.cycleNumber, 2, reason: '新周期号应为2');
+      expect(activeCycle.kLevel, 0, reason: '新周期应重置为k0');
 
-      // 验证：再错标记已记录
       final marks = await db.select(db.mistakeAgainMarks).get();
-      expect(marks.length, 1);
+      expect(marks.length, 1, reason: '应有1个再错标记');
     });
   });
 }
