@@ -16,6 +16,6 @@ abstract class ErrorQuestionRepository {
   Future<void> delete(String id);
 
   Future<void> sync();
-  
+
   Future<List<ErrorQuestion>> getPendingSync();
 }

@@ -7,7 +7,8 @@ class RemoteErrorQuestionDataSource {
 
   RemoteErrorQuestionDataSource(this._dio);
 
-  Future<List<ErrorQuestion>> syncQuestions(List<ErrorQuestion> questions) async {
+  Future<List<ErrorQuestion>> syncQuestions(
+      List<ErrorQuestion> questions) async {
     try {
       final response = await _dio.post(
         '/api/v1/error-questions/sync',

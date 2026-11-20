@@ -107,11 +107,16 @@ class ErrorQuestion {
       myAnswer: json['my_answer'] as String,
       correctAnswer: json['correct_answer'] as String,
       reason: json['reason'] as String,
-      masteryStatus: MasteryStatusExtension.fromApiValue(json['mastery_status'] as String),
+      masteryStatus:
+          MasteryStatusExtension.fromApiValue(json['mastery_status'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'] as String) : null,
-      lastSyncedAt: json['last_synced_at'] != null ? DateTime.parse(json['last_synced_at'] as String) : null,
+      deletedAt: json['deleted_at'] != null
+          ? DateTime.parse(json['deleted_at'] as String)
+          : null,
+      lastSyncedAt: json['last_synced_at'] != null
+          ? DateTime.parse(json['last_synced_at'] as String)
+          : null,
     );
   }
 }

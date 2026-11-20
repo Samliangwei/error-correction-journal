@@ -1,7 +1,7 @@
 /// 集成测试：验证本地模式下的 CRUD 操作不访问网络
-/// 
+///
 /// 运行方式：flutter test test_integration/local_mode_test.dart
-/// 
+///
 /// 验证点：
 /// 1. localOnly 模式下不发起 HTTP 请求
 /// 2. 新增/编辑/删除错题保存到本地数据库
@@ -10,7 +10,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
-import 'package:error_journal/features/error_questions/domain/models/error_question.dart' as domain;
+import 'package:error_journal/features/error_questions/domain/models/error_question.dart'
+    as domain;
 import 'package:error_journal/features/error_questions/data/local/local_error_question_data_source.dart';
 import 'package:error_journal/core/database/database.dart';
 import 'package:error_journal/core/constants/app_constants.dart';

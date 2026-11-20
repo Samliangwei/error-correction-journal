@@ -17,14 +17,12 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<AppSettings> getSettings() async {
     final syncModeStr = _prefs.getString(_keySyncMode);
-    final syncMode = syncModeStr == 'cloudSync' 
-        ? SyncMode.cloudSync 
-        : SyncMode.localOnly;
+    final syncMode =
+        syncModeStr == 'cloudSync' ? SyncMode.cloudSync : SyncMode.localOnly;
 
     final lastSyncTimeStr = _prefs.getString(_keyLastSyncTime);
-    final lastSyncTime = lastSyncTimeStr != null
-        ? DateTime.tryParse(lastSyncTimeStr)
-        : null;
+    final lastSyncTime =
+        lastSyncTimeStr != null ? DateTime.tryParse(lastSyncTimeStr) : null;
 
     return AppSettings(
       syncMode: syncMode,

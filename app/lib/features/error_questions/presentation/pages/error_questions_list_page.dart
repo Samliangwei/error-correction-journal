@@ -33,9 +33,11 @@ class ErrorQuestionsListPage extends ConsumerWidget {
                 children: [
                   Icon(Icons.book_outlined, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
-                  Text('还没有错题记录', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                  Text('还没有错题记录',
+                      style: TextStyle(fontSize: 16, color: Colors.grey)),
                   SizedBox(height: 8),
-                  Text('点击下方 + 按钮添加', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                  Text('点击下方 + 按钮添加',
+                      style: TextStyle(fontSize: 14, color: Colors.grey)),
                 ],
               ),
             );
@@ -62,7 +64,8 @@ class ErrorQuestionsListPage extends ConsumerWidget {
                           Chip(
                             label: Text(question.subject),
                             padding: EdgeInsets.zero,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                           const SizedBox(width: 8),
                           Text(

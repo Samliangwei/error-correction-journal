@@ -14,6 +14,6 @@ Future<QueryExecutor> openDatabaseConnection() async {
 
   final dbFolder = await getApplicationDocumentsDirectory();
   final file = File(p.join(dbFolder.path, AppConstants.databaseName));
-  
+
   return NativeDatabase.createInBackground(file);
 }

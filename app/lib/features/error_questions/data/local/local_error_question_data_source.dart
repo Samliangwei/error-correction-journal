@@ -22,7 +22,8 @@ class LocalErrorQuestionDataSource {
     }
 
     if (masteryStatus != null) {
-      query = query..where((tbl) => tbl.masteryStatus.equals(masteryStatus.apiValue));
+      query = query
+        ..where((tbl) => tbl.masteryStatus.equals(masteryStatus.apiValue));
     }
 
     final rows = await query.get();
@@ -39,22 +40,22 @@ class LocalErrorQuestionDataSource {
 
   Future<void> create(domain.ErrorQuestion question) async {
     await _database.into(_database.errorQuestions).insert(
-      ErrorQuestionsCompanion.insert(
-        id: question.id,
-        subject: question.subject,
-        question: question.question,
-        myAnswer: question.myAnswer,
-        correctAnswer: question.correctAnswer,
-        reason: question.reason,
-        masteryStatus: question.masteryStatus.apiValue,
-        createdAt: question.createdAt,
-        updatedAt: question.updatedAt,
-        deletedAt: Value(question.deletedAt),
-        lastSyncedAt: Value(question.lastSyncedAt),
-        needsSync: Value(question.needsSync),
-      ),
-      mode: InsertMode.insertOrReplace,
-    );
+          ErrorQuestionsCompanion.insert(
+            id: question.id,
+            subject: question.subject,
+            question: question.question,
+            myAnswer: question.myAnswer,
+            correctAnswer: question.correctAnswer,
+            reason: question.reason,
+            masteryStatus: question.masteryStatus.apiValue,
+            createdAt: question.createdAt,
+            updatedAt: question.updatedAt,
+            deletedAt: Value(question.deletedAt),
+            lastSyncedAt: Value(question.lastSyncedAt),
+            needsSync: Value(question.needsSync),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
   }
 
   Future<void> update(domain.ErrorQuestion question) async {

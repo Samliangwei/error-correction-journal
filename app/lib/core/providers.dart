@@ -30,21 +30,24 @@ final dioClientProvider = Provider<DioClient>((ref) {
   );
 });
 
-final localErrorQuestionDataSourceProvider = Provider<LocalErrorQuestionDataSource>((ref) {
+final localErrorQuestionDataSourceProvider =
+    Provider<LocalErrorQuestionDataSource>((ref) {
   final database = ref.watch(databaseProvider);
   return LocalErrorQuestionDataSource(database);
 });
 
-final remoteErrorQuestionDataSourceProvider = Provider<RemoteErrorQuestionDataSource>((ref) {
+final remoteErrorQuestionDataSourceProvider =
+    Provider<RemoteErrorQuestionDataSource>((ref) {
   final dioClient = ref.watch(dioClientProvider);
   return RemoteErrorQuestionDataSource(dioClient.dio);
 });
 
-final errorQuestionRepositoryProvider = Provider<ErrorQuestionRepository>((ref) {
+final errorQuestionRepositoryProvider =
+    Provider<ErrorQuestionRepository>((ref) {
   final localDataSource = ref.watch(localErrorQuestionDataSourceProvider);
   final remoteDataSource = ref.watch(remoteErrorQuestionDataSourceProvider);
   final settingsRepository = ref.watch(settingsRepositoryProvider);
-  
+
   return ErrorQuestionRepositoryImpl(
     localDataSource: localDataSource,
     remoteDataSource: remoteDataSource,

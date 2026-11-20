@@ -4,7 +4,8 @@ import '../../../../core/providers.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../domain/models/error_question.dart';
 
-final errorQuestionsProvider = FutureProvider.family<List<ErrorQuestion>, ErrorQuestionsFilter>(
+final errorQuestionsProvider =
+    FutureProvider.family<List<ErrorQuestion>, ErrorQuestionsFilter>(
   (ref, filter) async {
     final repository = ref.watch(errorQuestionRepositoryProvider);
     return await repository.getAll(
@@ -14,7 +15,8 @@ final errorQuestionsProvider = FutureProvider.family<List<ErrorQuestion>, ErrorQ
   },
 );
 
-final errorQuestionDetailProvider = FutureProvider.family<ErrorQuestion?, String>(
+final errorQuestionDetailProvider =
+    FutureProvider.family<ErrorQuestion?, String>(
   (ref, id) async {
     final repository = ref.watch(errorQuestionRepositoryProvider);
     return await repository.getById(id);

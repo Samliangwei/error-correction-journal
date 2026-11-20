@@ -12,7 +12,8 @@ class ErrorQuestionFormPage extends ConsumerStatefulWidget {
   const ErrorQuestionFormPage({this.id, super.key});
 
   @override
-  ConsumerState<ErrorQuestionFormPage> createState() => _ErrorQuestionFormPageState();
+  ConsumerState<ErrorQuestionFormPage> createState() =>
+      _ErrorQuestionFormPageState();
 }
 
 class _ErrorQuestionFormPageState extends ConsumerState<ErrorQuestionFormPage> {

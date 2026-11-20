@@ -28,7 +28,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _loadSettings() async {
     final repository = ref.read(settingsRepositoryProvider);
     final settings = await repository.getSettings();
-    
+
     setState(() {
       _syncMode = settings.syncMode;
       _serverUrlController.text = settings.serverUrl ?? 'http://localhost:8000';
@@ -44,10 +44,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       final repository = ref.read(settingsRepositoryProvider);
       final settings = AppSettings(
         syncMode: _syncMode,
-        serverUrl: _syncMode == SyncMode.cloudSync ? _serverUrlController.text : null,
+        serverUrl:
+            _syncMode == SyncMode.cloudSync ? _serverUrlController.text : null,
         apiKey: _syncMode == SyncMode.cloudSync ? _apiKeyController.text : null,
       );
-      
+
       await repository.saveSettings(settings);
 
       if (mounted) {

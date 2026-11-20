@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-// Conditional imports  
+// Conditional imports
 import 'database_native.dart' if (dart.library.html) 'database_web.dart';
 import '../constants/app_constants.dart';
 
@@ -28,7 +28,7 @@ class ErrorQuestions extends Table {
 @DriftDatabase(tables: [ErrorQuestions])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
-  
+
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
@@ -40,8 +40,7 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
       },
-      onUpgrade: (Migrator m, int from, int to) async {
-      },
+      onUpgrade: (Migrator m, int from, int to) async {},
     );
   }
 }
