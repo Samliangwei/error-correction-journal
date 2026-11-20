@@ -348,9 +348,9 @@ void main() {
       );
 
       // 验证数据已持久化到当前数据库实例
-      final cycle = await repo.getActiveCycle(questionId);
-      expect(cycle, isNotNull);
-      expect(cycle!.kLevel.value, 1);
+      final cycleFromCurrentDb = await repo.getActiveCycle(questionId);
+      expect(cycleFromCurrentDb, isNotNull);
+      expect(cycleFromCurrentDb!.kLevel.value, 1);
 
       final events = await db.select(db.reviewEvents).get();
       expect(events.length, 1);
