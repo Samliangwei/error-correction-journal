@@ -135,7 +135,7 @@ class MistakeQuestionRepository {
             ..where((q) => q.id.equals(questionId)))
           .write(MistakeQuestionsCompanion(
         isArchived: const Value(false),
-        deletedAt: Value(null), // 清除deletedAt
+        deletedAt: const Value(null), // 清除deletedAt
         updatedAt: Value(DateTime.now()),
       ));
 
@@ -176,7 +176,7 @@ class MistakeQuestionRepository {
         planId: planId,
         questionId: candidates[i],
         orderIndex: nextOrder++,
-      );;
+      );
     }
   }
 
