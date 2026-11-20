@@ -215,15 +215,13 @@ void main() {
       // 完成优先：应该是已完成
       expect(q1Member.isCompleted, true, reason: '完成优先：保持已完成身份');
       // 完成时skip应清除（完成不应标记跳过）
-      expect(q1Member.isSkipped, false,
-          reason: '完成优先并清除skip，完成不应被标记跳过');
+      expect(q1Member.isSkipped, false, reason: '完成优先并清除skip，完成不应被标记跳过');
       // 最早顺序：MIN(order_index)=3
       expect(q1Member.orderIndex, 3, reason: '保留最早顺序order=3');
       // 稳定id：MIN(id)='member1'
       expect(q1Member.id, 'member1', reason: '稳定id选择字典序最小');
       // 最早created_at (Drift v2秒，v3微秒)
-      expect(
-          q1Member.createdAt.millisecondsSinceEpoch ~/ 1000, nowSeconds - 4,
+      expect(q1Member.createdAt.millisecondsSinceEpoch ~/ 1000, nowSeconds - 4,
           reason: '保留最早创建时间');
       // 最新updated_at
       expect(q1Member.updatedAt.millisecondsSinceEpoch ~/ 1000, nowSeconds,

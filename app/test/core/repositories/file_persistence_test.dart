@@ -135,8 +135,7 @@ void main() {
 
         // 验证：settings的pending字段持久化
         final settings = await db.select(db.settings).getSingle();
-        expect(settings.dailyTargetPendingN, null,
-            reason: 'pendingN应持久化为null');
+        expect(settings.dailyTargetPendingN, null, reason: 'pendingN应持久化为null');
         expect(settings.dailyTargetEffectiveFrom, null,
             reason: 'effectiveFrom应持久化为null');
 
@@ -397,8 +396,7 @@ void main() {
         expect(events.length, 1, reason: '应只有首次事件');
         expect(events.first.id, firstEventId, reason: 'event.id应保持不变');
         expect(events.first.result, 'know', reason: '应保留首次结果');
-        expect(plan.members.first.isCompleted, true,
-            reason: '完成身份应保留');
+        expect(plan.members.first.isCompleted, true, reason: '完成身份应保留');
 
         await db.close();
       }

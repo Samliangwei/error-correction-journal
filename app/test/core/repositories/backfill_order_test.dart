@@ -36,7 +36,9 @@ void main() {
 
       // 创建3个题目，相同的created_at，逆UUID顺序插入
       // 预期补位时按q.id ASC，应选中q-aaa（字典序最小）
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q-zzz',
             subject: 'Math',
             questionText: 'Q-zzz',
@@ -45,7 +47,9 @@ void main() {
             updatedAt: sameTime,
           ));
 
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q-mmm',
             subject: 'Math',
             questionText: 'Q-mmm',
@@ -54,7 +58,9 @@ void main() {
             updatedAt: sameTime,
           ));
 
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q-aaa',
             subject: 'Math',
             questionText: 'Q-aaa',
@@ -78,7 +84,9 @@ void main() {
       );
 
       // 提交一个题目，计划已有4个
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q-existing',
             subject: 'Math',
             questionText: 'Q-existing',
@@ -111,7 +119,9 @@ void main() {
 
       // 现在提交旧卡，只剩1个名额（N=5，已有1个）
       // 应该选择q-aaa（字典序最小）
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q-old',
             subject: 'Math',
             questionText: 'Q-old',
@@ -164,9 +174,10 @@ void main() {
       expect(memberIds, contains('q-zzz'));
 
       // 验证顺序：按orderIndex排序
-      final sortedMembers = members..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+      final sortedMembers = members
+        ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
       final orderedIds = sortedMembers.map((m) => m.questionId).toList();
-      
+
       // q-old最早due应排最前
       expect(orderedIds[0], 'q-old');
       // 然后是相同due的三个，按q.id ASC

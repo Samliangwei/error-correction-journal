@@ -442,8 +442,7 @@ void main() {
             ..where((c) => c.questionId.equals(questionId))
             ..where((c) => c.isActive.equals(true)))
           .getSingle();
-      expect(cycle.version, greaterThan(oldCycleVersion),
-          reason: '周期版本应递增');
+      expect(cycle.version, greaterThan(oldCycleVersion), reason: '周期版本应递增');
 
       // 到新due日期（11-24），但使用旧版本快照尝试提交
       question = await (db.select(db.mistakeQuestions)
