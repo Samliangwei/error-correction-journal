@@ -154,7 +154,7 @@ void main() {
       // 手动更新到k2
       await (db.update(db.reviewCycles)
             ..where((c) => c.questionId.equals(questionId)))
-          .write(ReviewCyclesCompanion(kLevel: Value(2)));
+          .write(const ReviewCyclesCompanion(kLevel: Value(2)));
 
       // When: 再次出错
       await repo.markAsMistakeAgain(

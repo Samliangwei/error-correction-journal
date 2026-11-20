@@ -251,10 +251,12 @@ class ReviewRepository {
   /// 再次出错（新周期）
   ///
   /// 已完成：保留今日事件/完成身份
-  /// 未完成：退出计划并补位
+  /// 未完成：退出计划并补位（需要MistakeQuestionRepository支持）
+  /// 注意：此方法不包含补位逻辑，由调用方（MistakeQuestionRepository）处理
   Future<void> markAsMistakeAgain({
     required String questionId,
     required LearningDate operationDate,
+    bool skipPlanUpdate = false,
   }) async {
     await db.transaction(() async {
       // 1. 检查同日幂等
@@ -269,21 +271,22 @@ class ReviewRepository {
         return;
       }
 
-      // 2. 检查今日计划状态
-      final todayPlan = await planRepo.getPlan(operationDate);
-      bool wasCompleted = false;
-      if (todayPlan != null) {
-        final member = todayPlan.members
-            .where((m) => m.questionId == questionId)
-            .firstOrNull;
-        wasCompleted = member?.isCompleted ?? false;
+      // 2. 检查今日计划状态（如果不跳过）
+      if (!skipPlanUpdate) {
+        final todayPlan = await planRepo.getPlan(operationDate);
+        if (todayPlan != null) {
+          final member = todayPlan.members
+              .where((m) => m.questionId == questionId)
+              .firstOrNull;
+          final wasCompleted = member?.isCompleted ?? false;
 
-        // 未完成则移出补位（已完成保留成员）
-        if (!wasCompleted && member != null) {
-          await planRepo.removeMember(
-            planId: todayPlan.id,
-            questionId: questionId,
-          );
+          // 未完成则移出（已完成保留成员）
+          if (!wasCompleted && member != null) {
+            await planRepo.removeMember(
+              planId: todayPlan.id,
+              questionId: questionId,
+            );
+          }
         }
       }
 

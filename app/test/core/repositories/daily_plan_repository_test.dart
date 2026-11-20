@@ -34,11 +34,18 @@ void main() {
       expect(plan.isFull, false);
     });
 
-    test('N可设置2-50，超出范围抛异常', () async {
-      await settingsRepo.setDailyTargetN(10);
-      expect(await settingsRepo.getDailyTargetN(), 10);
+    test('N必须5-50，边界与超出范围', () async {
+      // 边界接受
+      await settingsRepo.setDailyTargetN(5);
+      expect(await settingsRepo.getDailyTargetN(), 5);
 
-      await expectLater(() => settingsRepo.setDailyTargetN(1), throwsArgumentError);
+      await settingsRepo.setDailyTargetN(50);
+      expect(await settingsRepo.getDailyTargetN(), 50);
+
+      // 超出拒绝
+      await expectLater(() => settingsRepo.setDailyTargetN(2), throwsArgumentError);
+      await expectLater(() => settingsRepo.setDailyTargetN(3), throwsArgumentError);
+      await expectLater(() => settingsRepo.setDailyTargetN(4), throwsArgumentError);
       await expectLater(() => settingsRepo.setDailyTargetN(51), throwsArgumentError);
     });
 

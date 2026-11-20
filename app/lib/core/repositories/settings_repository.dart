@@ -15,10 +15,10 @@ class SettingsRepository {
     return settings.dailyTargetN;
   }
 
-  /// 设置每日目标N（范围2-50，推荐5-50，次日生效）
+  /// 设置每日目标N（5-50，次日生效）
   Future<void> setDailyTargetN(int n) async {
-    if (n < 2 || n > 50) {
-      throw ArgumentError('Daily target N must be between 2 and 50');
+    if (n < 5 || n > 50) {
+      throw ArgumentError('Daily target N must be between 5 and 50');
     }
 
     final settings = await _getOrCreateSettings();
