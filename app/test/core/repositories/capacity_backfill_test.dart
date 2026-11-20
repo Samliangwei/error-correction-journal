@@ -53,11 +53,13 @@ void main() {
 
       // 旧卡：q25（排序第26，不在前20）
       const oldCardId = 'q25';
-      final oldCardCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(oldCardId))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(oldCardId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(oldCardId)))
+          .getSingle();
 
       // 提交旧卡（跨日）
       final result = await reviewRepo.submitScheduledReview(
@@ -66,8 +68,10 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
         capacityConfirmed: true, // 确认
-        expectedCycleId: oldCardCycleId,
       );
 
       // 验证：提交成功
@@ -129,11 +133,13 @@ void main() {
       }
 
       const oldCardId = 'q25';
-      final oldCardCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(oldCardId))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      var cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(oldCardId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      var question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(oldCardId)))
+          .getSingle();
 
       // 首次确认提交
       await reviewRepo.submitScheduledReview(
@@ -142,14 +148,25 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
         capacityConfirmed: true,
-        expectedCycleId: oldCardCycleId,
       );
 
       final planBefore =
           await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       final capacityBefore = planBefore!.capacityC;
       final memberCountBefore = planBefore.members.length;
+
+      // 重新读取更新后的cycle和question（虽然幂等会拒绝）
+      cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(oldCardId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(oldCardId)))
+          .getSingle();
 
       // 重复确认（同题同日）
       final result2 = await reviewRepo.submitScheduledReview(
@@ -158,8 +175,10 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
         capacityConfirmed: true, // 再次确认
-        expectedCycleId: oldCardCycleId,
       );
 
       // 验证：幂等拒绝
@@ -198,11 +217,13 @@ void main() {
 
       // 旧卡：q5
       const oldCardId = 'q5';
-      final oldCardCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(oldCardId))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(oldCardId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(oldCardId)))
+          .getSingle();
 
       // 提交旧卡（新日无计划）
       final result = await reviewRepo.submitScheduledReview(
@@ -211,8 +232,10 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
         capacityConfirmed: false, // 不确认（有容量）
-        expectedCycleId: oldCardCycleId,
       );
 
       // 验证：提交成功
@@ -247,11 +270,13 @@ void main() {
       }
 
       const oldCardId = 'q20';
-      final oldCardCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(oldCardId))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(oldCardId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(oldCardId)))
+          .getSingle();
 
       // 提交旧卡（确认）
       await reviewRepo.submitScheduledReview(
@@ -260,8 +285,10 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
         capacityConfirmed: true,
-        expectedCycleId: oldCardCycleId,
       );
 
       // 验证：C=20（填满到N）
