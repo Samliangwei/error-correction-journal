@@ -99,17 +99,21 @@ void main() {
       );
 
       // 完成q1
-      final q1CycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q1')))
-              .getSingle())
-          .id;
+      final q1Cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1')))
+          .getSingle();
+      final q1Question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
       await reviewRepo.submitScheduledReview(
         questionId: 'q1',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: q1CycleId,
+        expectedQuestionVersion: q1Question.version,
+        expectedCycleId: q1Cycle.id,
+        expectedCycleVersion: q1Cycle.version,
       );
 
       // 归档q1
@@ -201,17 +205,21 @@ void main() {
       );
 
       // 完成q0
-      final q0CycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q0')))
-              .getSingle())
-          .id;
+      final q0Cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q0')))
+          .getSingle();
+      final q0Question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q0')))
+          .getSingle();
       await reviewRepo.submitScheduledReview(
         questionId: 'q0',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: q0CycleId,
+        expectedQuestionVersion: q0Question.version,
+        expectedCycleId: q0Cycle.id,
+        expectedCycleVersion: q0Cycle.version,
       );
 
       // 删除q0（已完成）
