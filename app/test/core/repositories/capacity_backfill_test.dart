@@ -210,11 +210,11 @@ void main() {
       // 验证：提交成功
       expect(result, isA<SubmissionSuccess>());
 
-      // 验证：计划中只有旧卡（无其他补位）
+      // 验证：计划已补满min(C, 候选数) = min(20, 10) = 10
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       expect(plan, isNotNull);
-      expect(plan!.members.length, 1); // 只有旧卡
-      expect(plan.members.first.questionId, oldCardId);
+      expect(plan!.members.length, 10); // 旧卡q5 + 补满到10个
+      expect(plan.members.any((m) => m.questionId == oldCardId), isTrue); // 包含旧卡
       expect(plan.capacityC, 20); // C初始=N
     });
 
