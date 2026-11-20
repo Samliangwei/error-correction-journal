@@ -232,9 +232,7 @@ class ReviewRepository {
         AND c.due_date IS NOT NULL
         AND c.due_date <= ?
       ORDER BY c.due_date ASC, q.created_at ASC
-    ''', variables: [
-      Variable.withString(date.value)
-    ]).get();
+    ''', variables: [Variable.withString(date.value)]).get();
 
     final allCandidates = query.map((row) => row.data['id'] as String).toList();
 

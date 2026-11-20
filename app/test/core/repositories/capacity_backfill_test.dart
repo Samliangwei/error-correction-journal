@@ -35,7 +35,9 @@ void main() {
     test('旧卡跨日确认：预留+补满到N，旧卡不在前20但在最终20内', () async {
       // 创建30个候选题
       for (int i = 0; i < 30; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -110,7 +112,9 @@ void main() {
     test('已有计划满额，重复确认同题：零扩容', () async {
       // 创建30个候选题
       for (int i = 0; i < 30; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -142,7 +146,8 @@ void main() {
         expectedCycleId: oldCardCycleId,
       );
 
-      final planBefore = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
+      final planBefore =
+          await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       final capacityBefore = planBefore!.capacityC;
       final memberCountBefore = planBefore.members.length;
 
@@ -161,7 +166,8 @@ void main() {
       expect(result2, isA<SubmissionDuplicate>());
 
       // 验证：C值不变（零扩容）
-      final planAfter = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
+      final planAfter =
+          await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       expect(planAfter!.capacityC, capacityBefore); // C不变
       expect(planAfter.members.length, memberCountBefore); // 成员数不变
 
@@ -174,7 +180,9 @@ void main() {
     test('新日无计划：预留旧卡+补满候选', () async {
       // 创建10个候选题
       for (int i = 0; i < 10; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -214,14 +222,17 @@ void main() {
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       expect(plan, isNotNull);
       expect(plan!.members.length, 10); // 旧卡q5 + 补满到10个
-      expect(plan.members.any((m) => m.questionId == oldCardId), isTrue); // 包含旧卡
+      expect(
+          plan.members.any((m) => m.questionId == oldCardId), isTrue); // 包含旧卡
       expect(plan.capacityC, 20); // C初始=N
     });
 
     test('满额确认：断言C值而不只count', () async {
       // 创建25个候选题
       for (int i = 0; i < 25; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',

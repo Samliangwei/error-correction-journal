@@ -148,7 +148,7 @@ class SettingsRepository {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ));
-    
+
     // 再次查询所有，取第一条（防止并发创建多条）
     final allAfterInsert = await db.select(db.settings).get();
     return allAfterInsert.first;

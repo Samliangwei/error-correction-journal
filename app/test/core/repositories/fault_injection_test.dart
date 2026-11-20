@@ -33,7 +33,9 @@ void main() {
 
     test('事件写入后故障：全部回滚', () async {
       // 创建题目和周期
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q1',
             subject: 'Math',
             questionText: 'Q1',
@@ -111,7 +113,9 @@ void main() {
 
     test('周期更新后故障：全部回滚', () async {
       // 创建题目和周期
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q1',
             subject: 'Math',
             questionText: 'Q1',
@@ -189,7 +193,9 @@ void main() {
 
     test('再错操作故障：全部回滚', () async {
       // 创建题目和周期（k2）
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q1',
             subject: 'Math',
             questionText: 'Q1',
