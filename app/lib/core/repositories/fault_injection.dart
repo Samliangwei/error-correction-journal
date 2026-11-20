@@ -11,11 +11,15 @@ class FaultInjection {
   /// 计划更新后故障
   void Function()? afterPlanUpdate;
 
+  /// 再错操作写入后故障
+  void Function()? afterMistakeAgainInsert;
+
   /// 重置所有故障点
   void reset() {
     afterEventInsert = null;
     afterCycleUpdate = null;
     afterPlanUpdate = null;
+    afterMistakeAgainInsert = null;
   }
 
   /// 触发事件写入后故障
@@ -31,5 +35,10 @@ class FaultInjection {
   /// 触发计划更新后故障
   void triggerAfterPlanUpdate() {
     afterPlanUpdate?.call();
+  }
+
+  /// 触发再错操作写入后故障
+  void triggerAfterMistakeAgainInsert() {
+    afterMistakeAgainInsert?.call();
   }
 }
