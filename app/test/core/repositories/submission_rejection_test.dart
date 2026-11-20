@@ -410,7 +410,7 @@ void main() {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ));
-      final questionId = 'q1';
+      const questionId = 'q1';
 
       await reviewRepo.createInitialCycle(
         questionId: questionId,
@@ -481,7 +481,7 @@ void main() {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ));
-      final questionId = 'q2';
+      const questionId = 'q2';
 
       await reviewRepo.createInitialCycle(
         questionId: questionId,
@@ -497,10 +497,16 @@ void main() {
           .getSingle();
 
       // 归档题目（递增version）
-      await questionRepo.archiveQuestion(questionId: questionId);
+      await questionRepo.archiveQuestion(
+        questionId: questionId,
+        operationDate: LearningDate.parse('2026-11-20'),
+      );
 
       // 恢复题目（再次递增version）
-      await questionRepo.restoreQuestion(questionId: questionId);
+      await questionRepo.restoreQuestion(
+        questionId: questionId,
+        operationDate: LearningDate.parse('2026-11-20'),
+      );
 
       // 使用归档前的旧版本卡片尝试提交
       final result = await reviewRepo.submitScheduledReview(
