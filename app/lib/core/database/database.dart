@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 
-// Conditional imports
+// Conditional imports  
 import 'database_native.dart' if (dart.library.html) 'database_web.dart';
 import '../constants/app_constants.dart';
 
@@ -29,7 +28,7 @@ class ErrorQuestions extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  AppDatabase.forTesting(QueryExecutor e) : super(e);
+  AppDatabase.forTesting(super.e);
 
   @override
   int get schemaVersion => AppConstants.databaseVersion;
