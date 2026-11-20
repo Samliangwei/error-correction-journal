@@ -217,6 +217,7 @@ class AppDatabase extends _$AppDatabase {
 
           // 业务键确定性合并：
           // - 完成优先：MAX(is_completed)保持已完成身份
+          // - 完成时清skip：完成不应标记跳过
           // - 最早顺序：MIN(order_index)保留合理顺序
           // - 稳定id：MIN(id)选择字典序最小的id
           // - 保留最早created_at和最新updated_at
@@ -231,7 +232,7 @@ class AppDatabase extends _$AppDatabase {
               question_id,
               MIN(order_index) as order_index,
               MAX(is_completed) as is_completed,
-              MAX(is_skipped) as is_skipped,
+              CASE WHEN MAX(is_completed) = 1 THEN 0 ELSE MAX(is_skipped) END as is_skipped,
               MIN(created_at) as created_at,
               MAX(updated_at) as updated_at
             FROM daily_plan_members
