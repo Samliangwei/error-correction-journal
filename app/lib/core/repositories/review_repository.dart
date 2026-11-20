@@ -225,23 +225,7 @@ class ReviewRepository {
         );
       }
 
-      // 3. 检查今日再错标记
-      final mistakeAgainMarks = await (db.select(db.mistakeAgainMarks)
-            ..where((m) =>
-                m.questionId.equals(questionId) &
-                m.operationDate.equals(submittedDate.value)))
-          .get();
-
-      if (mistakeAgainMarks.isNotEmpty) {
-        // 获取新周期号（再错后的活跃周期）
-        final newCycleRow = await (db.select(db.reviewCycles)
-              ..where((c) =>
-                  c.questionId.equals(questionId) & c.isActive.equals(true)))
-            .getSingle();
-        return SubmissionBlockedByMistakeAgain(newCycleRow.cycleNumber);
-      }
-
-      // 4. 获取当前周期并检查真实周期id（问题5）
+      // 3. 获取当前周期并检查真实周期id（问题5）
       final cycleRow = await (db.select(db.reviewCycles)
             ..where((c) =>
                 c.questionId.equals(questionId) & c.isActive.equals(true)))
@@ -259,7 +243,19 @@ class ReviewRepository {
         );
       }
 
-      // 检查k<4、due条件
+      // 4. 检查今日再错标记（在周期版本检查之后）
+      final mistakeAgainMarks = await (db.select(db.mistakeAgainMarks)
+            ..where((m) =>
+                m.questionId.equals(questionId) &
+                m.operationDate.equals(submittedDate.value)))
+          .get();
+
+      if (mistakeAgainMarks.isNotEmpty) {
+        // 今日再错后产生新周期，返回blocked
+        return SubmissionBlockedByMistakeAgain(cycleRow.cycleNumber);
+      }
+
+      // 5. 检查k<4、due条件
       if (cycleRow.kLevel >= 4) {
         return SubmissionAlreadyMastered();
       }
@@ -281,10 +277,10 @@ class ReviewRepository {
         version: cycleRow.version,
       );
 
-      // 5. 获取所有周期（领域服务需要）
+      // 6. 获取所有周期（领域服务需要）
       final allCycles = await _getAllCycles(questionId);
 
-      // 6. 调用领域服务（已经过幂等性+生命周期+再错检查）
+      // 7. 调用领域服务（已经过幂等性+生命周期+版本+再错+due/k检查）
       final domainResult = ReviewSubmissionService.submitScheduledReview(
         currentCycle: currentCycle,
         result: result,
