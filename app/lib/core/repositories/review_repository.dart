@@ -60,6 +60,7 @@ class ReviewRepository {
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ));
+    faultInjection.triggerAfterInitialCycleInsert();
 
     return cycle;
   }

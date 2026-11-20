@@ -161,7 +161,11 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('录入成功')),
           );
-          context.go('/');
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/');
+          }
         }
       }
     } catch (e) {

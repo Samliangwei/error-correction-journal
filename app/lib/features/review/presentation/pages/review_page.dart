@@ -20,8 +20,14 @@ class ReviewPage extends ConsumerStatefulWidget {
 class _ReviewPageState extends ConsumerState<ReviewPage> {
   MistakeQuestion? _question;
   ReviewCycle? _cycle;
+  /// 加载卡片时捕获的版本快照，提交时不重新查询
+  int? _expectedQuestionVersion;
+  String? _expectedCycleId;
+  int? _expectedCycleVersion;
   bool _isLoading = true;
   bool _answerRevealed = false;
+  /// 无答案题：用户确认自行核验后才可评分
+  bool _selfVerificationConfirmed = false;
   bool _isSubmitting = false;
   String? _errorMessage;
   bool _capacityConfirmed = false;
@@ -53,6 +59,9 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
       setState(() {
         _question = question;
         _cycle = cycle;
+        _expectedQuestionVersion = question.version;
+        _expectedCycleId = cycle.id;
+        _expectedCycleVersion = cycle.version;
         _isLoading = false;
       });
     } catch (e) {
@@ -68,10 +77,21 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
 
     if (!_answerRevealed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先查看答案再提交')),
+        const SnackBar(content: Text('请先回忆确认后再提交')),
       );
       return;
     }
+
+    final hasAnswer = _question!.correctAnswer != null &&
+        _question!.correctAnswer!.isNotEmpty;
+    if (!hasAnswer && !_selfVerificationConfirmed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先确认自行核验后再评分')),
+      );
+      return;
+    }
+
+    if (_isSubmitting) return;
 
     setState(() {
       _isSubmitting = true;
@@ -80,18 +100,17 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
 
     try {
       final reviewRepo = ref.read(reviewRepositoryProvider);
-      final hasAnswer = _question!.correctAnswer != null && _question!.correctAnswer!.isNotEmpty;
 
       final submissionResult = await reviewRepo.submitScheduledReview(
         questionId: widget.questionId,
         result: result,
         submittedDate: LearningDate.today(),
         hasAnswer: hasAnswer,
-        hasConfirmedVerification: hasAnswer,
+        hasConfirmedVerification: hasAnswer || _selfVerificationConfirmed,
         capacityConfirmed: _capacityConfirmed,
-        expectedQuestionVersion: _question!.version,
-        expectedCycleId: _cycle!.id,
-        expectedCycleVersion: _cycle!.version,
+        expectedQuestionVersion: _expectedQuestionVersion!,
+        expectedCycleId: _expectedCycleId!,
+        expectedCycleVersion: _expectedCycleVersion!,
       );
 
       if (!mounted) return;
@@ -398,18 +417,32 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline, size: 16, color: AppColors.textSecondary),
+                            Icon(Icons.info_outline,
+                                size: 16, color: AppColors.textSecondary),
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                '该题未录入答案，请自行核验后选择掌握程度',
-                                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                '该题未录入答案，请自行核验后再评分',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      CheckboxListTile(
+                        value: _selfVerificationConfirmed,
+                        onChanged: _isSubmitting
+                            ? null
+                            : (v) => setState(
+                                () => _selfVerificationConfirmed = v ?? false),
+                        title: const Text('我已完成自行核验'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: 16),
                     ],
                     const Divider(),
                     const SizedBox(height: 16),
@@ -422,11 +455,12 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                     Row(
                       children: [
                         Expanded(
-                          child:                           _buildResultButton(
+                          child: _buildResultButton(
                             label: '不会',
                             icon: Icons.close,
                             color: AppColors.error,
                             result: ReviewResult.notKnow,
+                            enabled: hasAnswer || _selfVerificationConfirmed,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -436,6 +470,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                             icon: Icons.help_outline,
                             color: Colors.orange,
                             result: ReviewResult.fuzzy,
+                            enabled: hasAnswer || _selfVerificationConfirmed,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -445,6 +480,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                             icon: Icons.check,
                             color: AppColors.primary,
                             result: ReviewResult.know,
+                            enabled: hasAnswer || _selfVerificationConfirmed,
                           ),
                         ),
                       ],
@@ -464,9 +500,10 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
     required IconData icon,
     required Color color,
     required ReviewResult result,
+    bool enabled = true,
   }) {
     return ElevatedButton(
-      onPressed: _isSubmitting ? null : () => _submitReview(result),
+      onPressed: (!_isSubmitting && enabled) ? () => _submitReview(result) : null,
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         padding: const EdgeInsets.symmetric(vertical: 16),

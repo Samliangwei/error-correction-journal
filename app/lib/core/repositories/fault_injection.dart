@@ -14,12 +14,16 @@ class FaultInjection {
   /// 再错操作写入后故障
   void Function()? afterMistakeAgainInsert;
 
+  /// 初始周期写入后故障（录入事务回滚测试）
+  void Function()? afterInitialCycleInsert;
+
   /// 重置所有故障点
   void reset() {
     afterEventInsert = null;
     afterCycleUpdate = null;
     afterPlanUpdate = null;
     afterMistakeAgainInsert = null;
+    afterInitialCycleInsert = null;
   }
 
   /// 触发事件写入后故障
@@ -40,5 +44,9 @@ class FaultInjection {
   /// 触发再错操作写入后故障
   void triggerAfterMistakeAgainInsert() {
     afterMistakeAgainInsert?.call();
+  }
+
+  void triggerAfterInitialCycleInsert() {
+    afterInitialCycleInsert?.call();
   }
 }
