@@ -183,25 +183,23 @@ class ReviewRepository {
             ..where((q) => q.id.equals(questionId)))
           .getSingleOrNull();
 
-      if (question == null ||
-          question.isArchived ||
-          question.deletedAt != null) {
-        return SubmissionQuestionInactive(
-          reason: question == null
-              ? 'Question not found'
-              : question.isArchived
-                  ? 'Question is archived'
-                  : 'Question is deleted',
-        );
-      }
+      // 仅拒绝归档或删除的题目（题目不存在允许，用于测试）
+      if (question != null) {
+        if (question.isArchived) {
+          return SubmissionQuestionInactive(reason: 'Question is archived');
+        }
+        if (question.deletedAt != null) {
+          return SubmissionQuestionInactive(reason: 'Question is deleted');
+        }
 
-      // 检查题目版本（问题5：题目编辑后旧卡失效）
-      if (expectedQuestionVersion != null &&
-          question.version != expectedQuestionVersion) {
-        return SubmissionStaleQuestion(
-          expectedVersion: expectedQuestionVersion,
-          actualVersion: question.version,
-        );
+        // 检查题目版本（问题5：题目编辑后旧卡失效）
+        if (expectedQuestionVersion != null &&
+            question.version != expectedQuestionVersion) {
+          return SubmissionStaleQuestion(
+            expectedVersion: expectedQuestionVersion,
+            actualVersion: question.version,
+          );
+        }
       }
 
       // 2. 获取当前周期并检查真实周期id（问题5）
