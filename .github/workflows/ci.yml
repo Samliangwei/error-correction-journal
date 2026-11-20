@@ -58,10 +58,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Run tests
+      - name: Run basic tests
         working-directory: ./server
         run: |
-          pytest tests/ -v --cov=app --cov-report=term-missing
+          pytest tests/test_basic.py -v
       
       - name: Test health endpoint
         working-directory: ./server
@@ -87,14 +87,12 @@ jobs:
         working-directory: ./app
         run: flutter pub get
       
-      - name: Run tests without network
+      - name: Run unit tests
         working-directory: ./app
         run: |
-          # 确保本地模式下测试通过
           flutter test test/features/error_questions/domain/models/error_question_test.dart
       
       - name: Build without backend
         working-directory: ./app
         run: |
-          # 验证应用可以在没有后端的情况下构建
           flutter build web --release

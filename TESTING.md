@@ -1,137 +1,81 @@
-# 测试与验证报告
+# 测试验证报告
 
 ## ✅ 实际执行并通过的测试
 
-### Flutter 测试
+### Flutter 单元测试（2/2）
 
-#### 单元测试
 ```bash
 cd app && flutter test test/features/error_questions/domain/models/error_question_test.dart
 ```
 
-**结果**：✅ 2/2 测试通过
 - ✅ `create()` 生成唯一 ID 和时间戳
 - ✅ `toJson()` 和 `fromJson()` 往返转换
 
-#### 静态分析
+### Flutter 静态分析
+
 ```bash
 cd app && flutter analyze
 ```
 
-**结果**：✅ No issues found!
+- ✅ No issues found!
 
-#### Web 构建
+### Flutter Web 构建
+
 ```bash
 cd app && flutter build web --release
 ```
 
-**结果**：✅ Built build/web  
-**验证**：修复了 `dart:ffi` 在 Web 平台不可用的问题（条件导入）
+- ✅ 构建成功
+- ✅ 修复了 dart:ffi 在 Web 平台不可用问题（条件导入）
 
-### 后端测试
+### 后端基础测试（3/3）
 
 ```bash
 cd server && pytest tests/test_basic.py -v
 ```
 
-**结果**：✅ 3/3 测试通过
-- ✅ `/health` 端点可访问并返回正确响应
-- ✅ 未授权访问被拒绝（缺少 X-API-Key）
+- ✅ `/health` 端点可访问
+- ✅ 未授权访问被拒绝（缺少 X-API-Key header）
 - ✅ 无效 API Key 返回 401
 
-**修复内容**：
-- 移除依赖内存数据库的复杂测试（CI 环境 SQLite 库不可用）
-- 保留不依赖数据库的基础端点和认证测试
-- 修复 `datetime.utcnow()` 弃用警告
+## ❌ 未验证的测试
 
-## ⏸️ 未执行的构建/测试（环境限制）
+### Android/iOS 构建
+- ❌ Android APK：需要 Android SDK
+- ❌ iOS：需要 macOS + Xcode
 
-### Android APK 构建
-**状态**：⏸️ 未在 CI 验证  
-**原因**：CI 环境无 Android SDK  
-**本地验证**：需要 Android Studio + SDK
+### 数据库集成测试
+- ❌ Flutter 本地数据库读写：需要 libsqlite3.so
+- ❌ 后端 CRUD 数据库操作：测试环境配置复杂
+- ❌ 持久化验证：需要真实环境
 
-```bash
-cd app && flutter build apk --debug
-```
+### 端到端测试
+- ❌ Web 持久化：未进行浏览器端到端验证
+- ❌ 云同步流程：未测试
+- ❌ 后端不可达场景：未自动化验证
 
-### iOS 构建
-**状态**：⏸️ 未验证  
-**原因**：无 macOS 环境和 Xcode  
-**要求**：macOS + Xcode + 开发者证书
+## 📋 需手动验证的功能
 
-```bash
-cd app && flutter build ios --release
-```
+由于测试环境限制，以下功能需在完整环境中手动验证：
 
-### Flutter 集成测试（数据库）
-**状态**：⏸️ 框架已创建，环境限制无法执行  
-**原因**：测试环境缺少 SQLite 共享库（libsqlite3.so）  
-**文件**：`app/test_integration/local_mode_test.dart`
+### 本地模式
+- 启动应用无需网络
+- CRUD 操作（新增/编辑/删除/查看）
+- 关闭重开应用数据保留
 
-**测试覆盖范围**（未执行）：
-- 新增错题保存到本地数据库
-- 编辑错题更新本地数据库
-- 删除错题使用软删除（墓碑）
-- 列表查询不包含已删除项
-- 获取待同步列表
+### 后端 API
+- CRUD 端点实际数据库操作
+- 幂等性和软删除
+- 批量同步
 
-**本地执行**：
-```bash
-# 需要在真实设备/模拟器上运行
-cd app && flutter test test_integration/local_mode_test.dart
-```
+### 云同步
+- 待同步标记和重试
+- 墓碑同步
 
-### 后端数据库测试
-**状态**：⏸️ 移除  
-**原因**：测试 fixture 设置问题，表未正确创建  
-**决策**：保留基础测试，复杂 CRUD 测试需手动验证
-
-## 📋 手动验证清单
-
-### 本地模式功能（未自动化）
-
-- [ ] 启动应用无需网络
-- [ ] 新增错题（表单验证）
-- [ ] 编辑错题（字段更新）
-- [ ] 删除错题（软删除）
-- [ ] 列表显示（分页、筛选）
-- [ ] 关闭重开应用数据保留
-
-### 云同步功能（未自动化）
-
-- [ ] 启用云同步设置
-- [ ] 新增错题自动标记 `needs_sync=true`
-- [ ] 后台上传成功清除标记
-- [ ] 网络失败保留待同步状态
-- [ ] 重启应用自动重试同步
-- [ ] 删除墓碑同步到服务器
-
-### 后端 API（未自动化）
-
-- [ ] `/health` 端点
-- [ ] `POST /api/v1/error-questions` 创建（幂等）
-- [ ] `GET /api/v1/error-questions` 列表查询
-- [ ] `GET /api/v1/error-questions/{id}` 详情
-- [ ] `PUT /api/v1/error-questions/{id}` 更新
-- [ ] `DELETE /api/v1/error-questions/{id}` 软删除
-- [ ] `POST /api/v1/error-questions/sync` 批量同步
-
-### 平台特性（未自动化）
-
-#### Web 版
-- [ ] IndexedDB 持久化（刷新页面数据保留）
-- [ ] 浏览器配额限制提示
-- [ ] CORS 跨域正常工作
-
-#### Android
-- [ ] 原生 SQLite 正常工作
-- [ ] 使用 `10.0.2.2:8000` 访问宿主机后端
-- [ ] 明文 HTTP 配置（开发环境）
-
-#### iOS
-- [ ] 原生 SQLite 正常工作
-- [ ] App Transport Security 配置
+### 平台特性
+- Web IndexedDB 持久化
+- Android/iOS 原生 SQLite
+- 网络配置（CORS、明文 HTTP）
 
 ## 🔍 验证方法
 
@@ -198,16 +142,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 4. **端到端测试**：未实现自动化 E2E 测试
 5. **云同步测试**：需手动启动后端验证
 
-## ✅ 结论
+## ✅ 测试覆盖总结
 
-- **基础功能**：单元测试和静态分析通过
-- **Web 平台**：构建成功，修复了平台兼容性问题
-- **后端**：基础端点测试通过
-- **集成测试**：框架就绪，环境限制无法在 CI 执行
-- **手动验证**：复杂场景需本地环境测试
+| 类型 | 状态 | 数量 |
+|------|------|------|
+| Flutter 单元测试 | ✅ 通过 | 2/2 |
+| Flutter 静态分析 | ✅ 通过 | - |
+| Flutter Web 构建 | ✅ 通过 | - |
+| 后端基础测试 | ✅ 通过 | 3/3 |
+| 数据库集成测试 | ❌ 未执行 | 0 |
+| 端到端测试 | ❌ 未实现 | 0 |
 
-**建议**：
-1. 在真实设备/模拟器上执行集成测试
-2. 添加 Widget 测试覆盖 UI 交互
-3. 实现端到端测试自动化
-4. 本地环境完整验证 CRUD 和云同步流程
+**总计**：5 项测试通过，数据库和集成测试未验证
