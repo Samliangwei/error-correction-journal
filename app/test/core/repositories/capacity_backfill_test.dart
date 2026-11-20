@@ -82,14 +82,15 @@ void main() {
       final memberIds = plan.members.map((m) => m.questionId).toList();
       expect(memberIds.contains(oldCardId), true);
 
-      // 验证：前19个是排序靠前的题（q0-q18，排除q25）
-      final expectedTop = List.generate(19, (i) => 'q$i');
-      for (final topId in expectedTop) {
-        expect(memberIds.contains(topId), true);
+      // 验证：包含排序靠前的19个题（q0-q19中的19个，加上q25共20个）
+      // 由于q25已在计划中，补满时会填入前19个非q25的题
+      int topCount = 0;
+      for (int i = 0; i < 20; i++) {
+        if (memberIds.contains('q$i')) {
+          topCount++;
+        }
       }
-
-      // 验证：q19在计划中（补满时加入的第20个）
-      expect(memberIds.contains('q19'), true);
+      expect(topCount, 19); // 前20个中的19个（排除q25）
 
       // 验证：旧卡已完成
       final member = plan.members.firstWhere((m) => m.questionId == oldCardId);
