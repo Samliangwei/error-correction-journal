@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
 
-// Conditional imports  
+// Conditional imports
 import 'database_native.dart' if (dart.library.html) 'database_web.dart';
 import '../constants/app_constants.dart';
 
