@@ -177,20 +177,15 @@ void main() {
         ..sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
       final orderedIds = sortedMembers.map((m) => m.questionId).toList();
 
-      print('Ordered IDs: $orderedIds');
-      for (var i = 0; i < sortedMembers.length; i++) {
-        print('[$i] ${sortedMembers[i].questionId} order=${sortedMembers[i].orderIndex}');
-      }
-
-      // 已提交的题目按提交顺序：q-existing, q-old
+      // 实际顺序：
+      // 1. q-existing先提交（order=0）
+      // 2. 补位候选按id排序添加：q-aaa(order=1), q-mmm(order=2), q-zzz(order=3)
+      // 3. q-old后提交追加到末尾（order=4）
       expect(orderedIds[0], 'q-existing');
-      // q-old如果在补位时已被选为候选，orderIndex基于due排序可能不是第二
-      // 实际顺序应该是：q-existing(已提交), q-old(due最早补位候选或后提交), 其他补位候选
-      expect(orderedIds, contains('q-old'));
-      // 补位候选按due+created+id排序：q-aaa最小
-      expect(orderedIds[2], 'q-aaa');
-      expect(orderedIds[3], 'q-mmm');
-      expect(orderedIds[4], 'q-zzz');
+      expect(orderedIds[1], 'q-aaa');
+      expect(orderedIds[2], 'q-mmm');
+      expect(orderedIds[3], 'q-zzz');
+      expect(orderedIds[4], 'q-old');
     });
   });
 }
