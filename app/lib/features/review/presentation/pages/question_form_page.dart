@@ -84,9 +84,6 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
     });
 
     try {
-      final questionRepo = ref.read(mistakeQuestionRepositoryProvider);
-      final reviewRepo = ref.read(reviewRepositoryProvider);
-
       final db = ref.read(appDatabaseProvider);
 
       if (_isEditing && widget.questionId != null) {

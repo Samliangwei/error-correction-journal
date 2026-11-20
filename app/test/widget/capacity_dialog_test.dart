@@ -3,12 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:error_journal/core/database/database.dart';
-import 'package:error_journal/core/repositories/daily_plan_repository.dart';
-import 'package:error_journal/core/repositories/review_repository.dart';
 import 'package:error_journal/core/repositories/settings_repository.dart';
 import 'package:error_journal/core/scheduling/learning_date.dart';
-import 'package:error_journal/core/scheduling/review_result.dart';
-import 'package:error_journal/core/scheduling/review_submission.dart';
 import 'package:error_journal/features/review/presentation/pages/review_page.dart';
 import '../support/widget_test_harness.dart';
 
