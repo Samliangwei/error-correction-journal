@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -27,7 +27,7 @@ async def health_check():
     """健康检查端点"""
     return {
         "status": "ok",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(UTC).isoformat().replace('+00:00', 'Z'),
     }
 
 
