@@ -301,7 +301,7 @@ class ReviewRepository {
         return SubmissionDuplicate(existingDomainEvent);
       }
 
-      // 2. 检查题目生命周期（问题4）和版本（问题5）
+      // 2. 检查题目版本（先检查）和生命周期
       final question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
           .getSingleOrNull();
@@ -309,19 +309,21 @@ class ReviewRepository {
       if (question == null) {
         return SubmissionQuestionInactive(reason: 'Question not found');
       }
-      if (question.isArchived) {
-        return SubmissionQuestionInactive(reason: 'Question is archived');
-      }
-      if (question.deletedAt != null) {
-        return SubmissionQuestionInactive(reason: 'Question is deleted');
-      }
 
-      // 检查题目版本（问题5：题目编辑后旧卡失效）
+      // 先检查题目版本（归档/删除操作会递增version，旧版本卡片应先被版本拦截）
       if (question.version != expectedQuestionVersion) {
         return SubmissionStaleQuestion(
           expectedVersion: expectedQuestionVersion,
           actualVersion: question.version,
         );
+      }
+
+      // 再检查生命周期（已通过版本检查，但最新题目也可能归档/删除）
+      if (question.isArchived) {
+        return SubmissionQuestionInactive(reason: 'Question is archived');
+      }
+      if (question.deletedAt != null) {
+        return SubmissionQuestionInactive(reason: 'Question is deleted');
       }
 
       // 3. 获取当前周期并检查真实周期id（问题5）
