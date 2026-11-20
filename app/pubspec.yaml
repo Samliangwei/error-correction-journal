@@ -60,6 +60,9 @@ dependencies:
   
   # 本地存储
   shared_preferences: ^2.3.3
+  
+  # 时钟注入（测试用）
+  clock: ^1.1.1
 
 dev_dependencies:
   flutter_test:
