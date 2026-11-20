@@ -317,8 +317,7 @@ class ReviewRepository {
       }
 
       // 检查题目版本（问题5：题目编辑后旧卡失效）
-      if (expectedQuestionVersion != null &&
-          question.version != expectedQuestionVersion) {
+      if (question.version != expectedQuestionVersion) {
         return SubmissionStaleQuestion(
           expectedVersion: expectedQuestionVersion,
           actualVersion: question.version,
@@ -335,8 +334,16 @@ class ReviewRepository {
         throw StateError('No active cycle for question $questionId');
       }
 
-      // 检查周期id匹配（旧卡校验）
-      if (expectedCycleId != null && cycleRow.id != expectedCycleId) {
+      // 检查周期id和版本匹配（旧卡校验）
+      if (cycleRow.id != expectedCycleId) {
+        return SubmissionStaleCycle(
+          expectedId: expectedCycleId,
+          actualId: cycleRow.id,
+        );
+      }
+
+      // 检查周期版本
+      if (cycleRow.version != expectedCycleVersion) {
         return SubmissionStaleCycle(
           expectedId: expectedCycleId,
           actualId: cycleRow.id,
