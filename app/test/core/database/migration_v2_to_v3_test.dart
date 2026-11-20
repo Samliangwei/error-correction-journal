@@ -175,8 +175,8 @@ void main() {
 
       // 1. 验证q1去重：只剩1条
       final q1Members = await (v3Db.select(v3Db.dailyPlanMembers)
-            ..where((m) =>
-                m.planId.equals('plan1') & m.questionId.equals('q1')))
+            ..where(
+                (m) => m.planId.equals('plan1') & m.questionId.equals('q1')))
           .get();
       expect(q1Members.length, 1, reason: 'q1应该去重为1条记录');
 
@@ -196,8 +196,8 @@ void main() {
 
       // 2. 验证q2未受影响
       final q2Members = await (v3Db.select(v3Db.dailyPlanMembers)
-            ..where((m) =>
-                m.planId.equals('plan1') & m.questionId.equals('q2')))
+            ..where(
+                (m) => m.planId.equals('plan1') & m.questionId.equals('q2')))
           .get();
       expect(q2Members.length, 1, reason: 'q2应该保持1条');
       expect(q2Members.first.id, 'member4');
@@ -230,10 +230,10 @@ void main() {
       // ===== 阶段4: 再次重开，验证迁移幂等性 =====
       final v3DbReopened = AppDatabase.forTesting(NativeDatabase(File(dbPath)));
 
-      final q1MembersReopened = await (v3DbReopened.select(
-              v3DbReopened.dailyPlanMembers)
-            ..where((m) =>
-                m.planId.equals('plan1') & m.questionId.equals('q1')))
+      final q1MembersReopened = await (v3DbReopened
+              .select(v3DbReopened.dailyPlanMembers)
+            ..where(
+                (m) => m.planId.equals('plan1') & m.questionId.equals('q1')))
           .get();
       expect(q1MembersReopened.length, 1, reason: '重开后q1仍为1条');
       expect(q1MembersReopened.first.isCompleted, true, reason: '重开后仍保持已完成');
