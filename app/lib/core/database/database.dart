@@ -47,8 +47,8 @@ class MistakeQuestions extends Table {
 // 复习周期
 class ReviewCycles extends Table {
   TextColumn get id => text()(); // UUID
-  TextColumn get questionId => text()
-      .customConstraint('NOT NULL REFERENCES mistake_questions(id) ON DELETE CASCADE')();
+  TextColumn get questionId => text().customConstraint(
+      'NOT NULL REFERENCES mistake_questions(id) ON DELETE CASCADE')();
   IntColumn get cycleNumber => integer()();
   IntColumn get kLevel => integer()(); // 0-4
   TextColumn get dueDate => text().nullable()(); // yyyy-MM-dd
@@ -121,8 +121,8 @@ class DailyPlans extends Table {
 // 计划成员
 class DailyPlanMembers extends Table {
   TextColumn get id => text()();
-  TextColumn get planId => text()
-      .customConstraint('NOT NULL REFERENCES daily_plans(id) ON DELETE CASCADE')();
+  TextColumn get planId => text().customConstraint(
+      'NOT NULL REFERENCES daily_plans(id) ON DELETE CASCADE')();
   TextColumn get questionId => text()();
   IntColumn get orderIndex => integer()(); // 排序
   BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
@@ -143,6 +143,8 @@ class DailyPlanMembers extends Table {
 class Settings extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get dailyTargetN => integer().withDefault(const Constant(20))();
+  IntColumn get dailyTargetPendingN => integer().nullable()();
+  TextColumn get dailyTargetEffectiveFrom => text().nullable()(); // yyyy-MM-dd
   DateTimeColumn get dailyTargetUpdatedAt => dateTime().nullable()();
   DateTimeColumn get lastBackupAt => dateTime().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -165,7 +167,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2; // 从1升级到2
+  int get schemaVersion => 3; // 升级到v3
 
   @override
   MigrationStrategy get migration {
@@ -179,8 +181,8 @@ class AppDatabase extends _$AppDatabase {
         ));
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from == 1 && to == 2) {
-          // 创建新表
+        if (from == 1 && to >= 2) {
+          // v1→v2: 创建新表
           await m.createTable(mistakeQuestions);
           await m.createTable(reviewCycles);
           await m.createTable(reviewEvents);
@@ -194,9 +196,39 @@ class AppDatabase extends _$AppDatabase {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ));
+        }
 
-          // 迁移旧数据（如果需要）
-          // 暂时保留旧表不动，新功能使用新表
+        if (from == 2 && to == 3) {
+          // v2→v3: 添加唯一约束 + settings pending字段
+          // 1. 重建daily_plan_members表
+          await customStatement('''
+            CREATE TABLE daily_plan_members_new (
+              id TEXT NOT NULL PRIMARY KEY,
+              plan_id TEXT NOT NULL REFERENCES daily_plans(id) ON DELETE CASCADE,
+              question_id TEXT NOT NULL,
+              order_index INTEGER NOT NULL,
+              is_completed INTEGER NOT NULL DEFAULT 0,
+              is_skipped INTEGER NOT NULL DEFAULT 0,
+              created_at INTEGER NOT NULL,
+              updated_at INTEGER NOT NULL,
+              UNIQUE(plan_id, question_id)
+            )
+          ''');
+
+          await customStatement('''
+            INSERT INTO daily_plan_members_new 
+            SELECT DISTINCT * FROM daily_plan_members
+          ''');
+
+          await customStatement('DROP TABLE daily_plan_members');
+          await customStatement(
+              'ALTER TABLE daily_plan_members_new RENAME TO daily_plan_members');
+
+          // 2. 添加settings pending字段
+          await customStatement(
+              'ALTER TABLE settings ADD COLUMN daily_target_pending_n INTEGER');
+          await customStatement(
+              'ALTER TABLE settings ADD COLUMN daily_target_effective_from TEXT');
         }
       },
     );

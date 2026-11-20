@@ -10,9 +10,9 @@ import 'settings_repository.dart';
 
 /// 错题生命周期状态
 enum QuestionLifecycle {
-  active,   // 活跃
+  active, // 活跃
   archived, // 归档
-  deleted,  // 已删除（回收站）
+  deleted, // 已删除（回收站）
 }
 
 class MistakeQuestionRepository {
@@ -166,7 +166,8 @@ class MistakeQuestionRepository {
     if (remainingSlots <= 0) return;
 
     // 2. 查询候选题
-    final candidates = await _getCandidateQuestions(date, plan.members.map((m) => m.questionId).toList());
+    final candidates = await _getCandidateQuestions(
+        date, plan.members.map((m) => m.questionId).toList());
 
     // 3. 填充
     var nextOrder = await planRepo.getNextOrderIndex(planId);
@@ -217,7 +218,11 @@ class MistakeQuestionRepository {
     String? reserveForQuestionId,
   }) async {
     await db.transaction(() async {
-      final targetN = await settingsRepo.getDailyTargetN();
+      // 应用待生效更改（如果到期）
+      await settingsRepo.applyPendingIfDue(date);
+
+      // 获取该日期应使用的N
+      final targetN = await settingsRepo.getDailyTargetNForDate(date);
       final plan = await planRepo.getOrCreatePlan(date: date, targetN: targetN);
 
       // 如果需要预留旧卡

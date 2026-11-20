@@ -58,12 +58,26 @@ void main() {
       // 设置容量为5（最小值）
       await settingsRepo.setDailyTargetN(5);
 
-      // 创建5个题目填满计划
-      for (int i = 0; i < 5; i++) {
+      // 创建6个候选题（5个填满+1个满额测试）
+      for (int i = 0; i < 6; i++) {
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
+              id: 'q$i',
+              subject: 'Math',
+              questionText: 'Q$i',
+              mistakeDate: DateTime.now(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ));
         await repo.createInitialCycle(
           questionId: 'q$i',
           formalizedDate: LearningDate.parse('2026-11-20'),
         );
+      }
+
+      // 前5个填满计划
+      for (int i = 0; i < 5; i++) {
         await repo.submitScheduledReview(
           questionId: 'q$i',
           result: ReviewResult.know,
@@ -73,15 +87,11 @@ void main() {
         );
       }
 
-      // 第6个题目，满额
-      await repo.createInitialCycle(
-        questionId: 'q6',
-        formalizedDate: LearningDate.parse('2026-11-20'),
-      );
+      // 第6个题目（q5），满额
 
       // 未确认提交，返回满额
       final result1 = await repo.submitScheduledReview(
-        questionId: 'q6',
+        questionId: 'q5',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
@@ -97,24 +107,39 @@ void main() {
 
       // 验证：零写（事件、周期、计划均未变）
       final events = await db.select(db.reviewEvents).get();
-      expect(events.where((e) => e.questionId == 'q6').length, 0);
+      expect(events.where((e) => e.questionId == 'q5').length, 0);
 
-      final cycle6 = await repo.getActiveCycle('q6');
-      expect(cycle6!.kLevel.value, 0); // 未变
-      expect(cycle6.version, 1); // 版本未递增
+      final cycle5 = await repo.getActiveCycle('q5');
+      expect(cycle5!.kLevel.value, 0); // 未变
+      expect(cycle5.version, 1); // 版本未递增
 
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
-      expect(plan!.members.length, 5); // 未增加
+      expect(plan!.members.length, 5); // 未增加，包含q0-q4
     });
 
     test('旧卡新日：满额但确认后提交成功', () async {
       await settingsRepo.setDailyTargetN(5);
 
-      for (int i = 0; i < 5; i++) {
+      // 创建6个候选题
+      for (int i = 0; i < 6; i++) {
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
+              id: 'q$i',
+              subject: 'Math',
+              questionText: 'Q$i',
+              mistakeDate: DateTime.now(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ));
         await repo.createInitialCycle(
           questionId: 'q$i',
           formalizedDate: LearningDate.parse('2026-11-20'),
         );
+      }
+
+      // 前5个填满
+      for (int i = 0; i < 5; i++) {
         await repo.submitScheduledReview(
           questionId: 'q$i',
           result: ReviewResult.know,
@@ -124,14 +149,9 @@ void main() {
         );
       }
 
-      await repo.createInitialCycle(
-        questionId: 'q6',
-        formalizedDate: LearningDate.parse('2026-11-20'),
-      );
-
-      // 确认后提交
+      // 第6个确认后提交
       final result = await repo.submitScheduledReview(
-        questionId: 'q6',
+        questionId: 'q5',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
@@ -150,8 +170,8 @@ void main() {
     test('N次日生效', () async {
       // 今日设置N=10
       await settingsRepo.setDailyTargetN(10);
-      final updatedAt = await settingsRepo.getDailyTargetUpdatedAt();
-      expect(updatedAt, isNotNull);
+      final model = await settingsRepo.getSettingsModel();
+      expect(model.hasPendingChange, true);
 
       // 今日计划仍用旧N（20）
       final todayPlan = await planRepo.getOrCreatePlan(
@@ -215,7 +235,8 @@ void main() {
         date: LearningDate.parse('2026-11-21'),
         targetN: 20,
       );
-      await planRepo.addMember(planId: plan.id, questionId: questionId, orderIndex: 0);
+      await planRepo.addMember(
+          planId: plan.id, questionId: questionId, orderIndex: 0);
 
       // 再次出错
       await repo.markAsMistakeAgain(
@@ -224,7 +245,8 @@ void main() {
       );
 
       // 验证：已移出计划
-      final updatedPlan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
+      final updatedPlan =
+          await planRepo.getPlan(LearningDate.parse('2026-11-21'));
       expect(updatedPlan!.members.length, 0);
     });
 
@@ -252,12 +274,12 @@ void main() {
             hasConfirmedVerification: false,
           );
 
-        // 注入失败
-        throw Exception('Simulated transaction failure');
-      });
-      // ignore: dead_code
-      fail('Should have thrown exception');
-    } catch (e) {
+          // 注入失败
+          throw Exception('Simulated transaction failure');
+        });
+        // ignore: dead_code
+        fail('Should have thrown exception');
+      } catch (e) {
         expect(e.toString(), contains('Simulated transaction failure'));
       }
 
@@ -286,7 +308,8 @@ void main() {
 
     test('关闭重开：数据仍然存在', () async {
       // 创建文件数据库
-      dbPath = '${Directory.systemTemp.path}/test_${DateTime.now().millisecondsSinceEpoch}.db';
+      dbPath =
+          '${Directory.systemTemp.path}/test_${DateTime.now().millisecondsSinceEpoch}.db';
       var db = AppDatabase.forTesting(NativeDatabase(File(dbPath)));
       var planRepo = DailyPlanRepository(db);
       var settingsRepo = SettingsRepository(db);

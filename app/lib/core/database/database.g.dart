@@ -3442,6 +3442,18 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(20));
+  static const VerificationMeta _dailyTargetPendingNMeta =
+      const VerificationMeta('dailyTargetPendingN');
+  @override
+  late final GeneratedColumn<int> dailyTargetPendingN = GeneratedColumn<int>(
+      'daily_target_pending_n', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _dailyTargetEffectiveFromMeta =
+      const VerificationMeta('dailyTargetEffectiveFrom');
+  @override
+  late final GeneratedColumn<String> dailyTargetEffectiveFrom =
+      GeneratedColumn<String>('daily_target_effective_from', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _dailyTargetUpdatedAtMeta =
       const VerificationMeta('dailyTargetUpdatedAt');
   @override
@@ -3470,6 +3482,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
   List<GeneratedColumn> get $columns => [
         id,
         dailyTargetN,
+        dailyTargetPendingN,
+        dailyTargetEffectiveFrom,
         dailyTargetUpdatedAt,
         lastBackupAt,
         createdAt,
@@ -3493,6 +3507,19 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           _dailyTargetNMeta,
           dailyTargetN.isAcceptableOrUnknown(
               data['daily_target_n']!, _dailyTargetNMeta));
+    }
+    if (data.containsKey('daily_target_pending_n')) {
+      context.handle(
+          _dailyTargetPendingNMeta,
+          dailyTargetPendingN.isAcceptableOrUnknown(
+              data['daily_target_pending_n']!, _dailyTargetPendingNMeta));
+    }
+    if (data.containsKey('daily_target_effective_from')) {
+      context.handle(
+          _dailyTargetEffectiveFromMeta,
+          dailyTargetEffectiveFrom.isAcceptableOrUnknown(
+              data['daily_target_effective_from']!,
+              _dailyTargetEffectiveFromMeta));
     }
     if (data.containsKey('daily_target_updated_at')) {
       context.handle(
@@ -3531,6 +3558,11 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       dailyTargetN: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}daily_target_n'])!,
+      dailyTargetPendingN: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}daily_target_pending_n']),
+      dailyTargetEffectiveFrom: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}daily_target_effective_from']),
       dailyTargetUpdatedAt: attachedDatabase.typeMapping.read(
           DriftSqlType.dateTime,
           data['${effectivePrefix}daily_target_updated_at']),
@@ -3552,6 +3584,8 @@ class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
 class Setting extends DataClass implements Insertable<Setting> {
   final int id;
   final int dailyTargetN;
+  final int? dailyTargetPendingN;
+  final String? dailyTargetEffectiveFrom;
   final DateTime? dailyTargetUpdatedAt;
   final DateTime? lastBackupAt;
   final DateTime createdAt;
@@ -3559,6 +3593,8 @@ class Setting extends DataClass implements Insertable<Setting> {
   const Setting(
       {required this.id,
       required this.dailyTargetN,
+      this.dailyTargetPendingN,
+      this.dailyTargetEffectiveFrom,
       this.dailyTargetUpdatedAt,
       this.lastBackupAt,
       required this.createdAt,
@@ -3568,6 +3604,13 @@ class Setting extends DataClass implements Insertable<Setting> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['daily_target_n'] = Variable<int>(dailyTargetN);
+    if (!nullToAbsent || dailyTargetPendingN != null) {
+      map['daily_target_pending_n'] = Variable<int>(dailyTargetPendingN);
+    }
+    if (!nullToAbsent || dailyTargetEffectiveFrom != null) {
+      map['daily_target_effective_from'] =
+          Variable<String>(dailyTargetEffectiveFrom);
+    }
     if (!nullToAbsent || dailyTargetUpdatedAt != null) {
       map['daily_target_updated_at'] = Variable<DateTime>(dailyTargetUpdatedAt);
     }
@@ -3583,6 +3626,12 @@ class Setting extends DataClass implements Insertable<Setting> {
     return SettingsCompanion(
       id: Value(id),
       dailyTargetN: Value(dailyTargetN),
+      dailyTargetPendingN: dailyTargetPendingN == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dailyTargetPendingN),
+      dailyTargetEffectiveFrom: dailyTargetEffectiveFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dailyTargetEffectiveFrom),
       dailyTargetUpdatedAt: dailyTargetUpdatedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(dailyTargetUpdatedAt),
@@ -3600,6 +3649,10 @@ class Setting extends DataClass implements Insertable<Setting> {
     return Setting(
       id: serializer.fromJson<int>(json['id']),
       dailyTargetN: serializer.fromJson<int>(json['dailyTargetN']),
+      dailyTargetPendingN:
+          serializer.fromJson<int?>(json['dailyTargetPendingN']),
+      dailyTargetEffectiveFrom:
+          serializer.fromJson<String?>(json['dailyTargetEffectiveFrom']),
       dailyTargetUpdatedAt:
           serializer.fromJson<DateTime?>(json['dailyTargetUpdatedAt']),
       lastBackupAt: serializer.fromJson<DateTime?>(json['lastBackupAt']),
@@ -3613,6 +3666,9 @@ class Setting extends DataClass implements Insertable<Setting> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'dailyTargetN': serializer.toJson<int>(dailyTargetN),
+      'dailyTargetPendingN': serializer.toJson<int?>(dailyTargetPendingN),
+      'dailyTargetEffectiveFrom':
+          serializer.toJson<String?>(dailyTargetEffectiveFrom),
       'dailyTargetUpdatedAt':
           serializer.toJson<DateTime?>(dailyTargetUpdatedAt),
       'lastBackupAt': serializer.toJson<DateTime?>(lastBackupAt),
@@ -3624,6 +3680,8 @@ class Setting extends DataClass implements Insertable<Setting> {
   Setting copyWith(
           {int? id,
           int? dailyTargetN,
+          Value<int?> dailyTargetPendingN = const Value.absent(),
+          Value<String?> dailyTargetEffectiveFrom = const Value.absent(),
           Value<DateTime?> dailyTargetUpdatedAt = const Value.absent(),
           Value<DateTime?> lastBackupAt = const Value.absent(),
           DateTime? createdAt,
@@ -3631,6 +3689,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       Setting(
         id: id ?? this.id,
         dailyTargetN: dailyTargetN ?? this.dailyTargetN,
+        dailyTargetPendingN: dailyTargetPendingN.present
+            ? dailyTargetPendingN.value
+            : this.dailyTargetPendingN,
+        dailyTargetEffectiveFrom: dailyTargetEffectiveFrom.present
+            ? dailyTargetEffectiveFrom.value
+            : this.dailyTargetEffectiveFrom,
         dailyTargetUpdatedAt: dailyTargetUpdatedAt.present
             ? dailyTargetUpdatedAt.value
             : this.dailyTargetUpdatedAt,
@@ -3645,6 +3709,12 @@ class Setting extends DataClass implements Insertable<Setting> {
       dailyTargetN: data.dailyTargetN.present
           ? data.dailyTargetN.value
           : this.dailyTargetN,
+      dailyTargetPendingN: data.dailyTargetPendingN.present
+          ? data.dailyTargetPendingN.value
+          : this.dailyTargetPendingN,
+      dailyTargetEffectiveFrom: data.dailyTargetEffectiveFrom.present
+          ? data.dailyTargetEffectiveFrom.value
+          : this.dailyTargetEffectiveFrom,
       dailyTargetUpdatedAt: data.dailyTargetUpdatedAt.present
           ? data.dailyTargetUpdatedAt.value
           : this.dailyTargetUpdatedAt,
@@ -3661,6 +3731,8 @@ class Setting extends DataClass implements Insertable<Setting> {
     return (StringBuffer('Setting(')
           ..write('id: $id, ')
           ..write('dailyTargetN: $dailyTargetN, ')
+          ..write('dailyTargetPendingN: $dailyTargetPendingN, ')
+          ..write('dailyTargetEffectiveFrom: $dailyTargetEffectiveFrom, ')
           ..write('dailyTargetUpdatedAt: $dailyTargetUpdatedAt, ')
           ..write('lastBackupAt: $lastBackupAt, ')
           ..write('createdAt: $createdAt, ')
@@ -3670,14 +3742,23 @@ class Setting extends DataClass implements Insertable<Setting> {
   }
 
   @override
-  int get hashCode => Object.hash(id, dailyTargetN, dailyTargetUpdatedAt,
-      lastBackupAt, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      dailyTargetN,
+      dailyTargetPendingN,
+      dailyTargetEffectiveFrom,
+      dailyTargetUpdatedAt,
+      lastBackupAt,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Setting &&
           other.id == this.id &&
           other.dailyTargetN == this.dailyTargetN &&
+          other.dailyTargetPendingN == this.dailyTargetPendingN &&
+          other.dailyTargetEffectiveFrom == this.dailyTargetEffectiveFrom &&
           other.dailyTargetUpdatedAt == this.dailyTargetUpdatedAt &&
           other.lastBackupAt == this.lastBackupAt &&
           other.createdAt == this.createdAt &&
@@ -3687,6 +3768,8 @@ class Setting extends DataClass implements Insertable<Setting> {
 class SettingsCompanion extends UpdateCompanion<Setting> {
   final Value<int> id;
   final Value<int> dailyTargetN;
+  final Value<int?> dailyTargetPendingN;
+  final Value<String?> dailyTargetEffectiveFrom;
   final Value<DateTime?> dailyTargetUpdatedAt;
   final Value<DateTime?> lastBackupAt;
   final Value<DateTime> createdAt;
@@ -3694,6 +3777,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   const SettingsCompanion({
     this.id = const Value.absent(),
     this.dailyTargetN = const Value.absent(),
+    this.dailyTargetPendingN = const Value.absent(),
+    this.dailyTargetEffectiveFrom = const Value.absent(),
     this.dailyTargetUpdatedAt = const Value.absent(),
     this.lastBackupAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -3702,6 +3787,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   SettingsCompanion.insert({
     this.id = const Value.absent(),
     this.dailyTargetN = const Value.absent(),
+    this.dailyTargetPendingN = const Value.absent(),
+    this.dailyTargetEffectiveFrom = const Value.absent(),
     this.dailyTargetUpdatedAt = const Value.absent(),
     this.lastBackupAt = const Value.absent(),
     required DateTime createdAt,
@@ -3711,6 +3798,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   static Insertable<Setting> custom({
     Expression<int>? id,
     Expression<int>? dailyTargetN,
+    Expression<int>? dailyTargetPendingN,
+    Expression<String>? dailyTargetEffectiveFrom,
     Expression<DateTime>? dailyTargetUpdatedAt,
     Expression<DateTime>? lastBackupAt,
     Expression<DateTime>? createdAt,
@@ -3719,6 +3808,10 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (dailyTargetN != null) 'daily_target_n': dailyTargetN,
+      if (dailyTargetPendingN != null)
+        'daily_target_pending_n': dailyTargetPendingN,
+      if (dailyTargetEffectiveFrom != null)
+        'daily_target_effective_from': dailyTargetEffectiveFrom,
       if (dailyTargetUpdatedAt != null)
         'daily_target_updated_at': dailyTargetUpdatedAt,
       if (lastBackupAt != null) 'last_backup_at': lastBackupAt,
@@ -3730,6 +3823,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
   SettingsCompanion copyWith(
       {Value<int>? id,
       Value<int>? dailyTargetN,
+      Value<int?>? dailyTargetPendingN,
+      Value<String?>? dailyTargetEffectiveFrom,
       Value<DateTime?>? dailyTargetUpdatedAt,
       Value<DateTime?>? lastBackupAt,
       Value<DateTime>? createdAt,
@@ -3737,6 +3832,9 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     return SettingsCompanion(
       id: id ?? this.id,
       dailyTargetN: dailyTargetN ?? this.dailyTargetN,
+      dailyTargetPendingN: dailyTargetPendingN ?? this.dailyTargetPendingN,
+      dailyTargetEffectiveFrom:
+          dailyTargetEffectiveFrom ?? this.dailyTargetEffectiveFrom,
       dailyTargetUpdatedAt: dailyTargetUpdatedAt ?? this.dailyTargetUpdatedAt,
       lastBackupAt: lastBackupAt ?? this.lastBackupAt,
       createdAt: createdAt ?? this.createdAt,
@@ -3752,6 +3850,13 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     }
     if (dailyTargetN.present) {
       map['daily_target_n'] = Variable<int>(dailyTargetN.value);
+    }
+    if (dailyTargetPendingN.present) {
+      map['daily_target_pending_n'] = Variable<int>(dailyTargetPendingN.value);
+    }
+    if (dailyTargetEffectiveFrom.present) {
+      map['daily_target_effective_from'] =
+          Variable<String>(dailyTargetEffectiveFrom.value);
     }
     if (dailyTargetUpdatedAt.present) {
       map['daily_target_updated_at'] =
@@ -3774,6 +3879,8 @@ class SettingsCompanion extends UpdateCompanion<Setting> {
     return (StringBuffer('SettingsCompanion(')
           ..write('id: $id, ')
           ..write('dailyTargetN: $dailyTargetN, ')
+          ..write('dailyTargetPendingN: $dailyTargetPendingN, ')
+          ..write('dailyTargetEffectiveFrom: $dailyTargetEffectiveFrom, ')
           ..write('dailyTargetUpdatedAt: $dailyTargetUpdatedAt, ')
           ..write('lastBackupAt: $lastBackupAt, ')
           ..write('createdAt: $createdAt, ')
@@ -5851,6 +5958,8 @@ typedef $$DailyPlanMembersTableProcessedTableManager = ProcessedTableManager<
 typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
   Value<int> id,
   Value<int> dailyTargetN,
+  Value<int?> dailyTargetPendingN,
+  Value<String?> dailyTargetEffectiveFrom,
   Value<DateTime?> dailyTargetUpdatedAt,
   Value<DateTime?> lastBackupAt,
   required DateTime createdAt,
@@ -5859,6 +5968,8 @@ typedef $$SettingsTableCreateCompanionBuilder = SettingsCompanion Function({
 typedef $$SettingsTableUpdateCompanionBuilder = SettingsCompanion Function({
   Value<int> id,
   Value<int> dailyTargetN,
+  Value<int?> dailyTargetPendingN,
+  Value<String?> dailyTargetEffectiveFrom,
   Value<DateTime?> dailyTargetUpdatedAt,
   Value<DateTime?> lastBackupAt,
   Value<DateTime> createdAt,
@@ -5879,6 +5990,14 @@ class $$SettingsTableFilterComposer
 
   ColumnFilters<int> get dailyTargetN => $composableBuilder(
       column: $table.dailyTargetN, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get dailyTargetPendingN => $composableBuilder(
+      column: $table.dailyTargetPendingN,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get dailyTargetEffectiveFrom => $composableBuilder(
+      column: $table.dailyTargetEffectiveFrom,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get dailyTargetUpdatedAt => $composableBuilder(
       column: $table.dailyTargetUpdatedAt,
@@ -5910,6 +6029,14 @@ class $$SettingsTableOrderingComposer
       column: $table.dailyTargetN,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get dailyTargetPendingN => $composableBuilder(
+      column: $table.dailyTargetPendingN,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get dailyTargetEffectiveFrom => $composableBuilder(
+      column: $table.dailyTargetEffectiveFrom,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get dailyTargetUpdatedAt => $composableBuilder(
       column: $table.dailyTargetUpdatedAt,
       builder: (column) => ColumnOrderings(column));
@@ -5939,6 +6066,12 @@ class $$SettingsTableAnnotationComposer
 
   GeneratedColumn<int> get dailyTargetN => $composableBuilder(
       column: $table.dailyTargetN, builder: (column) => column);
+
+  GeneratedColumn<int> get dailyTargetPendingN => $composableBuilder(
+      column: $table.dailyTargetPendingN, builder: (column) => column);
+
+  GeneratedColumn<String> get dailyTargetEffectiveFrom => $composableBuilder(
+      column: $table.dailyTargetEffectiveFrom, builder: (column) => column);
 
   GeneratedColumn<DateTime> get dailyTargetUpdatedAt => $composableBuilder(
       column: $table.dailyTargetUpdatedAt, builder: (column) => column);
@@ -5978,6 +6111,8 @@ class $$SettingsTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> dailyTargetN = const Value.absent(),
+            Value<int?> dailyTargetPendingN = const Value.absent(),
+            Value<String?> dailyTargetEffectiveFrom = const Value.absent(),
             Value<DateTime?> dailyTargetUpdatedAt = const Value.absent(),
             Value<DateTime?> lastBackupAt = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
@@ -5986,6 +6121,8 @@ class $$SettingsTableTableManager extends RootTableManager<
               SettingsCompanion(
             id: id,
             dailyTargetN: dailyTargetN,
+            dailyTargetPendingN: dailyTargetPendingN,
+            dailyTargetEffectiveFrom: dailyTargetEffectiveFrom,
             dailyTargetUpdatedAt: dailyTargetUpdatedAt,
             lastBackupAt: lastBackupAt,
             createdAt: createdAt,
@@ -5994,6 +6131,8 @@ class $$SettingsTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> dailyTargetN = const Value.absent(),
+            Value<int?> dailyTargetPendingN = const Value.absent(),
+            Value<String?> dailyTargetEffectiveFrom = const Value.absent(),
             Value<DateTime?> dailyTargetUpdatedAt = const Value.absent(),
             Value<DateTime?> lastBackupAt = const Value.absent(),
             required DateTime createdAt,
@@ -6002,6 +6141,8 @@ class $$SettingsTableTableManager extends RootTableManager<
               SettingsCompanion.insert(
             id: id,
             dailyTargetN: dailyTargetN,
+            dailyTargetPendingN: dailyTargetPendingN,
+            dailyTargetEffectiveFrom: dailyTargetEffectiveFrom,
             dailyTargetUpdatedAt: dailyTargetUpdatedAt,
             lastBackupAt: lastBackupAt,
             createdAt: createdAt,

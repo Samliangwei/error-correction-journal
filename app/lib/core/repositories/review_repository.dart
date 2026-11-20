@@ -63,7 +63,8 @@ class ReviewRepository {
   /// 获取活动周期
   Future<domain.ReviewCycle?> getActiveCycle(String questionId) async {
     final row = await (db.select(db.reviewCycles)
-          ..where((c) => c.questionId.equals(questionId) & c.isActive.equals(true)))
+          ..where(
+              (c) => c.questionId.equals(questionId) & c.isActive.equals(true)))
         .getSingleOrNull();
 
     if (row == null) return null;
@@ -97,7 +98,9 @@ class ReviewRepository {
               result: _parseResult(r.result),
               kLevelBefore: domain.KLevel.fromValue(r.kLevelBefore),
               kLevelAfter: domain.KLevel.fromValue(r.kLevelAfter),
-              dueDateAfter: r.dueDateAfter != null ? LearningDate.parse(r.dueDateAfter!) : null,
+              dueDateAfter: r.dueDateAfter != null
+                  ? LearningDate.parse(r.dueDateAfter!)
+                  : null,
             ))
         .toList();
   }
@@ -108,11 +111,14 @@ class ReviewRepository {
     required LearningDate submittedDate,
     required bool confirmed,
   }) async {
-    final targetN = await settingsRepo.getDailyTargetN();
-    final plan = await planRepo.getOrCreatePlan(date: submittedDate, targetN: targetN);
+    // 使用日期相关的N（次日生效规则）
+    final targetN = await settingsRepo.getDailyTargetNForDate(submittedDate);
+    final plan =
+        await planRepo.getOrCreatePlan(date: submittedDate, targetN: targetN);
 
     // 已在计划中（检查同题同日重复确认）
-    if (await planRepo.isQuestionInPlan(planId: plan.id, questionId: questionId)) {
+    if (await planRepo.isQuestionInPlan(
+        planId: plan.id, questionId: questionId)) {
       return CapacityAvailable(plan.id);
     }
 
@@ -134,14 +140,15 @@ class ReviewRepository {
 
     // 满额但已确认：重检后扩容C+1
     final planRecheck = await planRepo.getPlan(submittedDate);
-    if (planRecheck != null && await planRepo.isQuestionInPlan(planId: planRecheck.id, questionId: questionId)) {
+    if (planRecheck != null &&
+        await planRepo.isQuestionInPlan(
+            planId: planRecheck.id, questionId: questionId)) {
       // 已在计划中（同题重复确认），零扩容
       return CapacityAvailable(planRecheck.id);
     }
 
     // 扩容C+1
-    await (db.update(db.dailyPlans)
-          ..where((p) => p.id.equals(plan.id)))
+    await (db.update(db.dailyPlans)..where((p) => p.id.equals(plan.id)))
         .write(DailyPlansCompanion(
       capacityC: Value(plan.capacityC + 1),
       updatedAt: Value(DateTime.now()),
@@ -324,7 +331,9 @@ class ReviewRepository {
           ));
 
       // 5. 记录再错标记
-      await db.into(db.mistakeAgainMarks).insert(MistakeAgainMarksCompanion.insert(
+      await db
+          .into(db.mistakeAgainMarks)
+          .insert(MistakeAgainMarksCompanion.insert(
             id: const Uuid().v4(),
             questionId: questionId,
             operationDate: operationDate.value,
@@ -344,7 +353,8 @@ class ReviewRepository {
               questionId: r.questionId,
               cycleNumber: r.cycleNumber,
               kLevel: domain.KLevel.fromValue(r.kLevel),
-              dueDate: r.dueDate != null ? LearningDate.parse(r.dueDate!) : null,
+              dueDate:
+                  r.dueDate != null ? LearningDate.parse(r.dueDate!) : null,
               isActive: r.isActive,
               version: r.version,
             ))

@@ -47,7 +47,7 @@ class DailyPlanRepository {
 
   DailyPlanRepository(this.db);
 
-  /// 获取或创建今日计划
+  /// 获取或创建今日计划（内部使用，需提供targetN）
   Future<DailyPlanModel> getOrCreatePlan({
     required LearningDate date,
     required int targetN,
@@ -68,7 +68,7 @@ class DailyPlanRepository {
       );
     }
 
-    // 创建新计划：C初始=N
+    // 创建新计划：C初始=N（使用传入的targetN，调用方负责日期解析）
     final planId = const Uuid().v4();
     await db.into(db.dailyPlans).insert(DailyPlansCompanion.insert(
           id: planId,
@@ -110,8 +110,8 @@ class DailyPlanRepository {
     required String questionId,
   }) async {
     await (db.update(db.dailyPlanMembers)
-          ..where((m) =>
-              m.planId.equals(planId) & m.questionId.equals(questionId)))
+          ..where(
+              (m) => m.planId.equals(planId) & m.questionId.equals(questionId)))
         .write(DailyPlanMembersCompanion(
       isCompleted: const Value(true),
       updatedAt: Value(DateTime.now()),
@@ -124,8 +124,8 @@ class DailyPlanRepository {
     required String questionId,
   }) async {
     await (db.delete(db.dailyPlanMembers)
-          ..where((m) =>
-              m.planId.equals(planId) & m.questionId.equals(questionId)))
+          ..where(
+              (m) => m.planId.equals(planId) & m.questionId.equals(questionId)))
         .go();
   }
 
@@ -135,8 +135,8 @@ class DailyPlanRepository {
     required String questionId,
   }) async {
     final member = await (db.select(db.dailyPlanMembers)
-          ..where((m) =>
-              m.planId.equals(planId) & m.questionId.equals(questionId)))
+          ..where(
+              (m) => m.planId.equals(planId) & m.questionId.equals(questionId)))
         .getSingleOrNull();
     return member != null;
   }
