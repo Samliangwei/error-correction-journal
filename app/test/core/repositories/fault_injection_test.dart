@@ -83,9 +83,9 @@ void main() {
       expect(events.length, 0);
 
       // 验证：周期未更新
-      final cycle = await reviewRepo.getActiveCycle('q1');
-      expect(cycle, isNotNull);
-      expect(cycle!.kLevel.value, 0); // 仍然是k0
+      final cycleCheck = await reviewRepo.getActiveCycle('q1');
+      expect(cycleCheck, isNotNull);
+      expect(cycleCheck!.kLevel.value, 0); // 仍然是k0
 
       // 验证：计划未创建
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
@@ -94,13 +94,23 @@ void main() {
       // 清除故障，重试成功
       reviewRepo.faultInjection.reset();
 
+      cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1'))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
+
       final result2 = await reviewRepo.submitScheduledReview(
         questionId: 'q1',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：重试成功
@@ -163,40 +173,50 @@ void main() {
       }
 
       // 验证：事件未写入
-      final events = await db.select(db.reviewEvents).get();
-      expect(events.length, 0);
+      final eventsAfterFault = await db.select(db.reviewEvents).get();
+      expect(eventsAfterFault.length, 0);
 
       // 验证：周期未更新
-      final cycle = await reviewRepo.getActiveCycle('q1');
-      expect(cycle, isNotNull);
-      expect(cycle!.kLevel.value, 0); // 仍然是k0
+      final cycleAfterFault = await reviewRepo.getActiveCycle('q1');
+      expect(cycleAfterFault, isNotNull);
+      expect(cycleAfterFault!.kLevel.value, 0); // 仍然是k0
 
       // 验证：计划未创建
-      final plan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
-      expect(plan, isNull);
+      final planAfterFault = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
+      expect(planAfterFault, isNull);
 
       // 清除故障，重试成功
       reviewRepo.faultInjection.reset();
 
-      final result2 = await reviewRepo.submitScheduledReview(
+      cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1'))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
+
+      final result2Again = await reviewRepo.submitScheduledReview(
         questionId: 'q1',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：重试成功
-      expect(result2.runtimeType.toString(), 'SubmissionSuccess');
+      expect(result2Again.runtimeType.toString(), 'SubmissionSuccess');
 
       // 验证：事件已写入
-      final events2 = await db.select(db.reviewEvents).get();
-      expect(events2.length, 1);
+      final events2After = await db.select(db.reviewEvents).get();
+      expect(events2After.length, 1);
 
       // 验证：周期已更新
-      final cycle2 = await reviewRepo.getActiveCycle('q1');
-      expect(cycle2!.kLevel.value, 1);
+      final cycle2After = await reviewRepo.getActiveCycle('q1');
+      expect(cycle2After!.kLevel.value, 1);
     });
 
     test('再错操作故障：全部回滚', () async {
