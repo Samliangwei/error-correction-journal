@@ -44,10 +44,12 @@ void main() {
       );
 
       // 获取cycleId
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
       // 次日提交
       final result = await repo.submitScheduledReview(
@@ -56,7 +58,9 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 成功
