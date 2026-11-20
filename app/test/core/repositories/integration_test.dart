@@ -263,9 +263,10 @@ void main() {
         operationDate: LearningDate.parse('2026-11-21'),
       );
 
-      // 获取新周期ID
+      // 获取新周期ID（活跃的）
       final newCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
+                ..where((c) => c.questionId.equals(questionId))
+                ..where((c) => c.isActive.equals(true)))
               .getSingle())
           .id;
 
