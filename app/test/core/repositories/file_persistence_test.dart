@@ -54,11 +54,13 @@ void main() {
           formalizedDate: LearningDate.parse('2026-11-20'),
         );
 
-        final cycleId = (await (db.select(db.reviewCycles)
-                  ..where((c) => c.questionId.equals('q1'))
-                  ..where((c) => c.isActive.equals(true)))
-                .getSingle())
-            .id;
+        final cycle = await (db.select(db.reviewCycles)
+              ..where((c) => c.questionId.equals('q1'))
+              ..where((c) => c.isActive.equals(true)))
+            .getSingle();
+        final question = await (db.select(db.mistakeQuestions)
+              ..where((q) => q.id.equals('q1')))
+            .getSingle();
 
         // 提交复习
         await reviewRepo.submitScheduledReview(
@@ -67,7 +69,9 @@ void main() {
           submittedDate: LearningDate.parse('2026-11-21'),
           hasAnswer: true,
           hasConfirmedVerification: false,
-          expectedCycleId: cycleId,
+          expectedQuestionVersion: question.version,
+          expectedCycleId: cycle.id,
+          expectedCycleVersion: cycle.version,
         );
 
         // 再错标记
@@ -153,11 +157,13 @@ void main() {
           formalizedDate: LearningDate.parse('2026-11-20'),
         );
 
-        final cycleId = (await (db.select(db.reviewCycles)
-                  ..where((c) => c.questionId.equals('q1'))
-                  ..where((c) => c.isActive.equals(true)))
-                .getSingle())
-            .id;
+        final cycle = await (db.select(db.reviewCycles)
+              ..where((c) => c.questionId.equals('q1'))
+              ..where((c) => c.isActive.equals(true)))
+            .getSingle();
+        final question = await (db.select(db.mistakeQuestions)
+              ..where((q) => q.id.equals('q1')))
+            .getSingle();
 
         await reviewRepo.submitScheduledReview(
           questionId: 'q1',
@@ -165,7 +171,9 @@ void main() {
           submittedDate: LearningDate.parse('2026-11-21'),
           hasAnswer: true,
           hasConfirmedVerification: false,
-          expectedCycleId: cycleId,
+          expectedQuestionVersion: question.version,
+          expectedCycleId: cycle.id,
+          expectedCycleVersion: cycle.version,
         );
 
         await db.close();
@@ -178,11 +186,13 @@ void main() {
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
 
-        final cycleId = (await (db.select(db.reviewCycles)
-                  ..where((c) => c.questionId.equals('q1'))
-                  ..where((c) => c.isActive.equals(true)))
-                .getSingle())
-            .id;
+        final cycle = await (db.select(db.reviewCycles)
+              ..where((c) => c.questionId.equals('q1'))
+              ..where((c) => c.isActive.equals(true)))
+            .getSingle();
+        final question = await (db.select(db.mistakeQuestions)
+              ..where((q) => q.id.equals('q1')))
+            .getSingle();
 
         // 重复提交同题同日
         final result2 = await reviewRepo.submitScheduledReview(
@@ -191,7 +201,9 @@ void main() {
           submittedDate: LearningDate.parse('2026-11-21'),
           hasAnswer: true,
           hasConfirmedVerification: false,
-          expectedCycleId: cycleId,
+          expectedQuestionVersion: question.version,
+          expectedCycleId: cycle.id,
+          expectedCycleVersion: cycle.version,
         );
 
         // 验证：幂等拒绝
