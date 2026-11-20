@@ -12,6 +12,7 @@ import '../scheduling/review_submission.dart';
 import '../scheduling/scheduler.dart';
 import 'daily_plan_repository.dart';
 import 'settings_repository.dart';
+import 'fault_injection.dart';
 
 /// 容量检查结果
 sealed class CapacityCheckResult {}
@@ -32,6 +33,9 @@ class ReviewRepository {
   final AppDatabase db;
   final DailyPlanRepository planRepo;
   final SettingsRepository settingsRepo;
+
+  /// 故障注入（仅测试用，不对用户暴露）
+  final FaultInjection faultInjection = FaultInjection();
 
   ReviewRepository(this.db, this.planRepo, this.settingsRepo);
 
@@ -442,6 +446,9 @@ class ReviewRepository {
           version: Value(domainResult.updatedCycle.version),
           updatedAt: Value(DateTime.now()),
         ));
+
+        // 故障注入点：周期更新后
+        faultInjection.triggerAfterCycleUpdate();
 
         if (updatedRows == 0) {
           throw StateError(
