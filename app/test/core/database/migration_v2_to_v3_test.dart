@@ -26,7 +26,24 @@ void main() {
       // ===== 阶段1: 创建v2 schema并写入测试数据 =====
       final v2DbRaw = sqlite3.open(dbPath);
 
-      // 创建v2表结构
+      // 创建v2表结构（完整schema，包含error_questions旧表）
+      v2DbRaw.execute('''
+        CREATE TABLE error_questions (
+          id TEXT NOT NULL PRIMARY KEY,
+          subject TEXT NOT NULL,
+          question TEXT NOT NULL,
+          my_answer TEXT NOT NULL,
+          correct_answer TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          mastery_status TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          deleted_at INTEGER,
+          last_synced_at INTEGER,
+          needs_sync INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+
       v2DbRaw.execute('''
         CREATE TABLE mistake_questions (
           id TEXT NOT NULL PRIMARY KEY,
@@ -76,6 +93,17 @@ void main() {
       ''');
 
       v2DbRaw.execute('''
+        CREATE TABLE mistake_again_marks (
+          id TEXT NOT NULL PRIMARY KEY,
+          question_id TEXT NOT NULL,
+          operation_date TEXT NOT NULL,
+          new_cycle_number INTEGER NOT NULL,
+          created_at INTEGER NOT NULL,
+          UNIQUE(question_id, operation_date)
+        )
+      ''');
+
+      v2DbRaw.execute('''
         CREATE TABLE daily_plans (
           id TEXT NOT NULL PRIMARY KEY,
           learning_date TEXT NOT NULL UNIQUE,
@@ -104,6 +132,7 @@ void main() {
         CREATE TABLE settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           daily_target_n INTEGER NOT NULL DEFAULT 20,
+          daily_target_updated_at INTEGER,
           last_backup_at INTEGER,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL
@@ -113,57 +142,59 @@ void main() {
       // 设置user_version=2
       v2DbRaw.execute('PRAGMA user_version = 2');
 
-      // 写入测试数据
-      final now = DateTime.now().millisecondsSinceEpoch;
+      // 写入测试数据（Drift v2使用秒为单位的Unix时间戳）
+      final nowSeconds = (DateTime.now().millisecondsSinceEpoch / 1000).round();
 
       // 题目
       v2DbRaw.execute('''
         INSERT INTO mistake_questions VALUES
-        ('q1', 'Math', 'Q1', 'A1', NULL, NULL, $now, $now, $now, NULL, 0, NULL, 1),
-        ('q2', 'Math', 'Q2', 'A2', NULL, NULL, $now, $now, $now, NULL, 0, NULL, 1)
+        ('q1', 'Math', 'Q1', 'A1', NULL, NULL, $nowSeconds, $nowSeconds, $nowSeconds, NULL, 0, NULL, 1),
+        ('q2', 'Math', 'Q2', 'A2', NULL, NULL, $nowSeconds, $nowSeconds, $nowSeconds, NULL, 0, NULL, 1)
       ''');
 
       // 周期
       v2DbRaw.execute('''
         INSERT INTO review_cycles VALUES
-        ('c1', 'q1', 1, 0, '2026-11-21', 1, 1, $now, $now),
-        ('c2', 'q2', 1, 0, '2026-11-21', 1, 1, $now, $now)
+        ('c1', 'q1', 1, 0, '2026-11-21', 1, 1, $nowSeconds, $nowSeconds),
+        ('c2', 'q2', 1, 0, '2026-11-21', 1, 1, $nowSeconds, $nowSeconds)
       ''');
 
       // 事件
       v2DbRaw.execute('''
         INSERT INTO review_events VALUES
-        ('e1', 'q1', 'c1', 1, '2026-11-20', 'know', 0, 1, '2026-11-24', $now)
+        ('e1', 'q1', 'c1', 1, '2026-11-20', 'know', 0, 1, '2026-11-24', $nowSeconds)
       ''');
 
       // 计划
       v2DbRaw.execute('''
         INSERT INTO daily_plans VALUES
-        ('plan1', '2026-11-20', 20, 20, $now, $now)
+        ('plan1', '2026-11-20', 20, 20, $nowSeconds, $nowSeconds)
       ''');
 
-      // 重复成员：q1有3条记录（不同UUID，相同plan_id+question_id）
-      // - member1: 未完成，order=5，早创建
-      // - member2: 已完成，order=10，晚创建
-      // - member3: 未完成，order=3，中间创建
-      // 预期合并后：完成优先→已完成，最早顺序→order=3，稳定id→member1
+      // 重复成员：q1有4条记录（不同UUID，相同plan_id+question_id）
+      // - member1: 未完成未跳过，order=5，早创建
+      // - member2: 已完成但跳过，order=10，晚创建（完成优先应清除skip）
+      // - member3: 未完成但跳过，order=3，中间创建
+      // - member4: 已完成未跳过，order=7，较晚创建
+      // 预期合并后：MAX(completed)=1，MAX(skipped)应被清除（完成不应标记跳过），MIN(order)=3，MIN(id)=member1
       v2DbRaw.execute('''
         INSERT INTO daily_plan_members VALUES
-        ('member1', 'plan1', 'q1', 5, 0, 0, ${now - 3000}, ${now - 1000}),
-        ('member2', 'plan1', 'q1', 10, 1, 0, ${now - 1000}, $now),
-        ('member3', 'plan1', 'q1', 3, 0, 0, ${now - 2000}, ${now - 500})
+        ('member1', 'plan1', 'q1', 5, 0, 0, ${nowSeconds - 4}, ${nowSeconds - 2}),
+        ('member2', 'plan1', 'q1', 10, 1, 1, ${nowSeconds - 2}, $nowSeconds),
+        ('member3', 'plan1', 'q1', 3, 0, 1, ${nowSeconds - 3}, ${nowSeconds - 1}),
+        ('member4', 'plan1', 'q1', 7, 1, 0, ${nowSeconds - 1}, ${nowSeconds - 1})
       ''');
 
       // q2无重复
       v2DbRaw.execute('''
         INSERT INTO daily_plan_members VALUES
-        ('member4', 'plan1', 'q2', 15, 0, 0, $now, $now)
+        ('member_q2', 'plan1', 'q2', 15, 0, 0, $nowSeconds, $nowSeconds)
       ''');
 
       // 设置
       v2DbRaw.execute('''
-        INSERT INTO settings (daily_target_n, created_at, updated_at)
-        VALUES (20, $now, $now)
+        INSERT INTO settings (daily_target_n, daily_target_updated_at, created_at, updated_at)
+        VALUES (20, $nowSeconds, $nowSeconds, $nowSeconds)
       ''');
 
       v2DbRaw.dispose();
@@ -183,15 +214,19 @@ void main() {
       final q1Member = q1Members.first;
       // 完成优先：应该是已完成
       expect(q1Member.isCompleted, true, reason: '完成优先：保持已完成身份');
+      // 完成时skip应清除（完成不应标记跳过）
+      expect(q1Member.isSkipped, false,
+          reason: '完成优先并清除skip，完成不应被标记跳过');
       // 最早顺序：MIN(order_index)=3
       expect(q1Member.orderIndex, 3, reason: '保留最早顺序order=3');
       // 稳定id：MIN(id)='member1'
       expect(q1Member.id, 'member1', reason: '稳定id选择字典序最小');
-      // 最早created_at (Drift存储为微秒)
-      expect(q1Member.createdAt.millisecondsSinceEpoch, (now - 3000) * 1000,
+      // 最早created_at (Drift v2秒，v3微秒)
+      expect(
+          q1Member.createdAt.millisecondsSinceEpoch ~/ 1000, nowSeconds - 4,
           reason: '保留最早创建时间');
-      // 最新updated_at (Drift存储为微秒)
-      expect(q1Member.updatedAt.millisecondsSinceEpoch, now * 1000,
+      // 最新updated_at
+      expect(q1Member.updatedAt.millisecondsSinceEpoch ~/ 1000, nowSeconds,
           reason: '保留最新更新时间');
 
       // 2. 验证q2未受影响
