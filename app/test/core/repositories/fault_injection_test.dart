@@ -182,7 +182,8 @@ void main() {
       expect(cycleAfterFault!.kLevel.value, 0); // 仍然是k0
 
       // 验证：计划未创建
-      final planAfterFault = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
+      final planAfterFault =
+          await planRepo.getPlan(LearningDate.parse('2026-11-21'));
       expect(planAfterFault, isNull);
 
       // 清除故障，重试成功
