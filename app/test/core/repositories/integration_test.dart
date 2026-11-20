@@ -147,9 +147,9 @@ void main() {
       final events = await db.select(db.reviewEvents).get();
       expect(events.where((e) => e.questionId == 'q5').length, 0);
 
-      final cycle5 = await repo.getActiveCycle('q5');
-      expect(cycle5!.kLevel.value, 0); // 未变
-      expect(cycle5.version, 1); // 版本未递增
+      final cycle5After = await repo.getActiveCycle('q5');
+      expect(cycle5After!.kLevel.value, 0); // 未变
+      expect(cycle5After.version, 1); // 版本未递增
 
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
       expect(plan!.members.length, 5); // 未增加，包含q0-q4
