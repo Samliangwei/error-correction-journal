@@ -108,9 +108,9 @@ void main() {
       expect(events.first.result, 'know');
 
       // 验证：周期已更新
-      final cycle = await reviewRepo.getActiveCycle(oldCardId);
-      expect(cycle, isNotNull);
-      expect(cycle!.kLevel.value, 1);
+      final cycleAfter2 = await reviewRepo.getActiveCycle(oldCardId);
+      expect(cycleAfter2, isNotNull);
+      expect(cycleAfter2!.kLevel.value, 1);
     });
 
     test('已有计划满额，重复确认同题：零扩容', () async {
