@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -86,7 +87,6 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
       final reviewRepo = ref.read(reviewRepositoryProvider);
 
       final db = ref.read(appDatabaseProvider);
-      final reviewRepo = ref.read(reviewRepositoryProvider);
 
       if (_isEditing && widget.questionId != null) {
         final existingQuestion = await (db.select(db.mistakeQuestions)
@@ -124,7 +124,7 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
           context.pop();
         }
       } else {
-        String? questionId;
+        final reviewRepo = ref.read(reviewRepositoryProvider);
 
         await db.transaction(() async {
           final id = 'q-${DateTime.now().millisecondsSinceEpoch}';
@@ -154,8 +154,6 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
             questionId: id,
             formalizedDate: LearningDate.today(),
           );
-
-          questionId = id;
         });
 
         if (mounted) {

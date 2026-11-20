@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -213,11 +214,14 @@ class _QuestionsListPageState extends ConsumerState<QuestionsListPage> {
     }
 
     if (_searchQuery.isNotEmpty) {
-      final pattern = '%$_searchQuery%';
-      query = query..where((q) => q.questionText.like(pattern));
+      query = query
+        ..where((q) => q.questionText.contains(_searchQuery));
     }
 
-    query = query..orderBy([(q) => OrderingTerm.desc(q.createdAt)]);
+    query = query
+      ..orderBy([
+        (q) => OrderingTerm(expression: q.createdAt, mode: OrderingMode.desc)
+      ]);
 
     return query.get();
   }
