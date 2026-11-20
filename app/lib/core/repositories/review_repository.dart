@@ -122,7 +122,7 @@ class ReviewRepository {
       return CapacityAvailable(plan.id);
     }
 
-    // 有剩余容量：直接预留
+    // 有剩余容量：预留+补满（问题6）
     if (!plan.isFull) {
       final nextOrder = await planRepo.getNextOrderIndex(plan.id);
       await planRepo.addMember(
@@ -130,6 +130,23 @@ class ReviewRepository {
         questionId: questionId,
         orderIndex: nextOrder,
       );
+
+      // 补满到N（问题6）
+      if (confirmed) {
+        await _backfillPlanToN(plan.id, submittedDate, targetN);
+
+        // 更新C为实际成员数
+        final finalPlan = await planRepo.getPlan(submittedDate);
+        if (finalPlan != null) {
+          await (db.update(db.dailyPlans)
+                ..where((p) => p.id.equals(finalPlan.id)))
+              .write(DailyPlansCompanion(
+            capacityC: Value(finalPlan.members.length),
+            updatedAt: Value(DateTime.now()),
+          ));
+        }
+      }
+
       return CapacityAvailable(plan.id);
     }
 
@@ -138,7 +155,7 @@ class ReviewRepository {
       return CapacityFullNeedsConfirmation(plan.members.length, plan.capacityC);
     }
 
-    // 满额但已确认：重检后扩容C+1
+    // 满额但已确认：重检后扩容+补满（问题6）
     final planRecheck = await planRepo.getPlan(submittedDate);
     if (planRecheck != null &&
         await planRepo.isQuestionInPlan(
@@ -147,21 +164,111 @@ class ReviewRepository {
       return CapacityAvailable(planRecheck.id);
     }
 
-    // 扩容C+1
+    // 1. 先预留该题（扩容C到当前成员数+1）
+    final newCapacity = plan.members.length + 1;
     await (db.update(db.dailyPlans)..where((p) => p.id.equals(plan.id)))
         .write(DailyPlansCompanion(
-      capacityC: Value(plan.capacityC + 1),
+      capacityC: Value(newCapacity),
       updatedAt: Value(DateTime.now()),
     ));
 
-    // 加入成员
-    final nextOrder = await planRepo.getNextOrderIndex(plan.id);
+    // 2. 加入该题成员
+    var nextOrder = await planRepo.getNextOrderIndex(plan.id);
     await planRepo.addMember(
       planId: plan.id,
       questionId: questionId,
-      orderIndex: nextOrder,
+      orderIndex: nextOrder++,
     );
+
+    // 3. 填满到N（问题6：补满min(N, 合格数)）
+    await _backfillPlanToN(plan.id, submittedDate, targetN);
+
+    // 4. 获取最终计划并设置C为实际成员数
+    final finalPlan = await planRepo.getPlan(submittedDate);
+    if (finalPlan != null) {
+      await (db.update(db.dailyPlans)..where((p) => p.id.equals(finalPlan.id)))
+          .write(DailyPlansCompanion(
+        capacityC: Value(finalPlan.members.length),
+        updatedAt: Value(DateTime.now()),
+      ));
+    }
+
     return CapacityAvailable(plan.id);
+  }
+
+  /// 补满计划到N
+  Future<void> _backfillPlanToN(
+    String planId,
+    LearningDate date,
+    int targetN,
+  ) async {
+    final plan = await planRepo.getPlan(date);
+    if (plan == null) return;
+
+    final remainingSlots = targetN - plan.members.length;
+    if (remainingSlots <= 0) return;
+
+    final excludeIds = plan.members.map((m) => m.questionId).toList();
+    final candidates = await _getCandidateQuestions(date, excludeIds);
+
+    var nextOrder = await planRepo.getNextOrderIndex(planId);
+    for (int i = 0; i < remainingSlots && i < candidates.length; i++) {
+      await planRepo.addMember(
+        planId: planId,
+        questionId: candidates[i],
+        orderIndex: nextOrder++,
+      );
+    }
+  }
+
+  /// 获取候选题（排除不合格的）
+  Future<List<String>> _getCandidateQuestions(
+    LearningDate date,
+    List<String> excludeIds,
+  ) async {
+    // 查询活跃题目及其周期
+    final query = await db.customSelect('''
+      SELECT DISTINCT q.id
+      FROM mistake_questions q
+      INNER JOIN review_cycles c ON q.id = c.question_id
+      WHERE q.is_archived = 0
+        AND q.deleted_at IS NULL
+        AND c.is_active = 1
+        AND c.k_level < 4
+        AND c.due_date IS NOT NULL
+        AND c.due_date <= ?
+      ORDER BY c.due_date ASC, q.created_at ASC
+    ''', variables: [
+      Variable.withString(date.value)
+    ]).get();
+
+    final allCandidates = query.map((row) => row.data['id'] as String).toList();
+
+    // 排除已在计划中的和今日已有事件/再错的
+    final result = <String>[];
+    for (final candidateId in allCandidates) {
+      if (excludeIds.contains(candidateId)) continue;
+
+      // 检查今日是否已有事件
+      final todayEvents = await (db.select(db.reviewEvents)
+            ..where((e) =>
+                e.questionId.equals(candidateId) &
+                e.learningDate.equals(date.value)))
+          .get();
+      if (todayEvents.isNotEmpty) continue;
+
+      // 检查今日是否已再错
+      final todayMarks = await (db.select(db.mistakeAgainMarks)
+            ..where((m) =>
+                m.questionId.equals(candidateId) &
+                m.operationDate.equals(date.value)))
+          .get();
+      if (todayMarks.isNotEmpty) continue;
+
+      result.add(candidateId);
+    }
+
+    return result;
   }
 
   /// 提交排期复习（事务集成）
