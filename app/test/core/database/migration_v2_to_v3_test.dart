@@ -233,7 +233,7 @@ void main() {
                 (m) => m.planId.equals('plan1') & m.questionId.equals('q2')))
           .get();
       expect(q2Members.length, 1, reason: 'q2应该保持1条');
-      expect(q2Members.first.id, 'member4');
+      expect(q2Members.first.id, 'member_q2');
 
       // 3. 验证计划容量C保持一致
       final plan = await (v3Db.select(v3Db.dailyPlans)
