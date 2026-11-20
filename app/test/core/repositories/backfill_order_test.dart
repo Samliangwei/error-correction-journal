@@ -158,7 +158,7 @@ void main() {
       expect(plan, isNotNull);
       expect(plan!.capacityC, 5);
 
-      final members = await planRepo.getPlanMembers(plan.id);
+      final members = plan.members;
       expect(members.length, 5); // 2个已提交 + 补满4个候选
 
       // 验证补位的4个候选题按q.id ASC排序
