@@ -272,9 +272,10 @@ class ReviewRepository {
     required LearningDate submittedDate,
     required bool hasAnswer,
     required bool hasConfirmedVerification,
+    required int expectedQuestionVersion,
+    required String expectedCycleId,
+    required int expectedCycleVersion,
     bool capacityConfirmed = false,
-    int? expectedQuestionVersion,
-    String? expectedCycleId,
   }) async {
     return await db.transaction(() async {
       // 1. 先检查幂等性（同题同日已有成功事件）
