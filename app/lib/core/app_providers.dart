@@ -9,9 +9,13 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
   return AppDatabase();
 });
 
-final mistakeQuestionRepositoryProvider = Provider<MistakeQuestionRepository>((ref) {
+final mistakeQuestionRepositoryProvider =
+    Provider<MistakeQuestionRepository>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return MistakeQuestionRepository(db);
+  final planRepo = ref.watch(dailyPlanRepositoryProvider);
+  final reviewRepo = ref.watch(reviewRepositoryProvider);
+  final settingsRepo = ref.watch(settingsRepositoryProvider);
+  return MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
 });
 
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {

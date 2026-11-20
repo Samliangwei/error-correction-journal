@@ -85,21 +85,37 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
       final questionRepo = ref.read(mistakeQuestionRepositoryProvider);
       final reviewRepo = ref.read(reviewRepositoryProvider);
 
+      final db = ref.read(appDatabaseProvider);
+      final reviewRepo = ref.read(reviewRepositoryProvider);
+
       if (_isEditing && widget.questionId != null) {
-        await questionRepo.updateQuestion(
-          questionId: widget.questionId!,
-          subject: _subjectController.text.trim(),
-          questionText: _questionController.text.trim(),
-          correctAnswer: _answerController.text.trim().isEmpty
-              ? null
-              : _answerController.text.trim(),
-          myThinking: _thinkingController.text.trim().isEmpty
-              ? null
-              : _thinkingController.text.trim(),
-          errorNotes: _errorNotesController.text.trim().isEmpty
-              ? null
-              : _errorNotesController.text.trim(),
-        );
+        final existingQuestion = await (db.select(db.mistakeQuestions)
+              ..where((q) => q.id.equals(widget.questionId!)))
+            .getSingle();
+
+        await db.transaction(() async {
+          final updated = await (db.update(db.mistakeQuestions)
+                ..where((q) => q.id.equals(widget.questionId!)))
+              .write(MistakeQuestionsCompanion(
+            subject: Value(_subjectController.text.trim()),
+            questionText: Value(_questionController.text.trim()),
+            correctAnswer: Value(_answerController.text.trim().isEmpty
+                ? null
+                : _answerController.text.trim()),
+            myThinking: Value(_thinkingController.text.trim().isEmpty
+                ? null
+                : _thinkingController.text.trim()),
+            errorNotes: Value(_errorNotesController.text.trim().isEmpty
+                ? null
+                : _errorNotesController.text.trim()),
+            version: Value(existingQuestion.version + 1),
+            updatedAt: Value(DateTime.now()),
+          ));
+
+          if (updated == 0) {
+            throw StateError('更新失败：题目可能已被删除或修改');
+          }
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -108,25 +124,39 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
           context.pop();
         }
       } else {
-        final questionId = await questionRepo.createQuestion(
-          subject: _subjectController.text.trim(),
-          questionText: _questionController.text.trim(),
-          correctAnswer: _answerController.text.trim().isEmpty
-              ? null
-              : _answerController.text.trim(),
-          myThinking: _thinkingController.text.trim().isEmpty
-              ? null
-              : _thinkingController.text.trim(),
-          errorNotes: _errorNotesController.text.trim().isEmpty
-              ? null
-              : _errorNotesController.text.trim(),
-          mistakeDate: DateTime.now(),
-        );
+        String? questionId;
 
-        await reviewRepo.createInitialCycle(
-          questionId: questionId,
-          formalizedDate: LearningDate.today(),
-        );
+        await db.transaction(() async {
+          final id = 'q-${DateTime.now().millisecondsSinceEpoch}';
+          final now = DateTime.now();
+
+          await db.into(db.mistakeQuestions).insert(
+                MistakeQuestionsCompanion.insert(
+                  id: id,
+                  subject: _subjectController.text.trim(),
+                  questionText: _questionController.text.trim(),
+                  correctAnswer: Value(_answerController.text.trim().isEmpty
+                      ? null
+                      : _answerController.text.trim()),
+                  myThinking: Value(_thinkingController.text.trim().isEmpty
+                      ? null
+                      : _thinkingController.text.trim()),
+                  errorNotes: Value(_errorNotesController.text.trim().isEmpty
+                      ? null
+                      : _errorNotesController.text.trim()),
+                  mistakeDate: now,
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+              );
+
+          await reviewRepo.createInitialCycle(
+            questionId: id,
+            formalizedDate: LearningDate.today(),
+          );
+
+          questionId = id;
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

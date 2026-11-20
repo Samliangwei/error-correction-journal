@@ -213,15 +213,11 @@ class _QuestionsListPageState extends ConsumerState<QuestionsListPage> {
     }
 
     if (_searchQuery.isNotEmpty) {
-      query = query
-        ..where((q) => q.questionText.like('%$_searchQuery%'));
+      final pattern = '%$_searchQuery%';
+      query = query..where((q) => q.questionText.like(pattern));
     }
 
-    query = query
-      ..orderBy([
-        (q) => OrderingTerm(
-            expression: q.createdAt, mode: OrderingMode.desc)
-      ]);
+    query = query..orderBy([(q) => OrderingTerm.desc(q.createdAt)]);
 
     return query.get();
   }

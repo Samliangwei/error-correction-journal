@@ -105,7 +105,7 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
                   itemCount: members.length,
                   itemBuilder: (context, index) {
                     final member = members[index];
-                    return FutureBuilder<List<MistakeQuestion>>(
+                    return FutureBuilder(
                       future: (ref.read(appDatabaseProvider).select(
                               ref.read(appDatabaseProvider).mistakeQuestions)
                             ..where((q) => q.id.equals(member.questionId)))
@@ -115,7 +115,8 @@ class _TodayPlanPageState extends ConsumerState<TodayPlanPage> {
                           return const SizedBox.shrink();
                         }
 
-                        final questions = questionSnapshot.data!;
+                        final questions =
+                            questionSnapshot.data as List<MistakeQuestion>;
                         if (questions.isEmpty) return const SizedBox.shrink();
 
                         final question = questions.first;

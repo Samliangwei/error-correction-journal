@@ -5,6 +5,7 @@ import '../../../../core/app_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/scheduling/learning_date.dart';
 import '../../../../core/scheduling/review_result.dart';
+import '../../../../core/scheduling/review_submission.dart';
 import '../../../../core/database/database.dart';
 
 class ReviewPage extends ConsumerStatefulWidget {
@@ -95,7 +96,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
 
       if (!mounted) return;
 
-      if (submissionResult.accepted) {
+      if (submissionResult is SubmissionSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('提交成功')),
         );
@@ -114,10 +115,10 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
     }
   }
 
-  Future<void> _handleRejection(dynamic submissionResult) async {
-    final reason = submissionResult.reason?.toString() ?? '未知原因';
-    
-    if (reason.contains('version')) {
+  Future<void> _handleRejection(SubmissionResult submissionResult) async {
+    if (submissionResult is SubmissionStaleVersion ||
+        submissionResult is SubmissionStaleQuestion ||
+        submissionResult is SubmissionStaleCycle) {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -138,12 +139,13 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
           ],
         ),
       );
-    } else if (reason.contains('capacity')) {
+    } else if (submissionResult is SubmissionCapacityFull) {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('今日计划已满'),
-          content: const Text('今日复习任务已满额，是否确认添加？'),
+          content: Text(
+              '今日复习任务已满额 (${submissionResult.currentCount}/${submissionResult.capacityC})，是否确认添加？'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -160,7 +162,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
       if (confirmed == true) {
         setState(() => _capacityConfirmed = true);
       }
-    } else if (reason.contains('duplicate')) {
+    } else if (submissionResult is SubmissionDuplicate) {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -174,8 +176,12 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
           ],
         ),
       );
+    } else if (submissionResult is SubmissionNeedsVerification) {
+      setState(() => _errorMessage = '该题无答案，请先自行核验');
+    } else if (submissionResult is SubmissionQuestionInactive) {
+      setState(() => _errorMessage = '题目已归档或删除');
     } else {
-      setState(() => _errorMessage = '提交被拒绝: $reason');
+      setState(() => _errorMessage = '提交被拒绝: ${submissionResult.runtimeType}');
     }
   }
 
@@ -416,11 +422,11 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: _buildResultButton(
+                          child:                           _buildResultButton(
                             label: '不会',
                             icon: Icons.close,
                             color: AppColors.error,
-                            result: ReviewResult.dontKnow,
+                            result: ReviewResult.notKnow,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -429,7 +435,7 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                             label: '模糊',
                             icon: Icons.help_outline,
                             color: Colors.orange,
-                            result: ReviewResult.vague,
+                            result: ReviewResult.fuzzy,
                           ),
                         ),
                         const SizedBox(width: 12),

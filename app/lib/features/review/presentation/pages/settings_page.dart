@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/app_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -41,12 +40,13 @@ class _ReviewSettingsPageState extends ConsumerState<ReviewSettingsPage> {
 
     try {
       final settingsRepo = ref.read(settingsRepositoryProvider);
-      final settings = await settingsRepo.getSettings();
+      final settings = await settingsRepo.getSettingsModel();
 
-      _currentTarget = settings.dailyTargetN;
-      _pendingTarget = settings.dailyTargetPendingN;
-      _effectiveDate = settings.dailyTargetEffectiveFrom;
-      _dailyTargetController.text = (_pendingTarget ?? _currentTarget).toString();
+      _currentTarget = settings.currentTargetN;
+      _pendingTarget = settings.pendingTargetN;
+      _effectiveDate = settings.effectiveFromDate?.toString();
+      _dailyTargetController.text =
+          (_pendingTarget ?? _currentTarget).toString();
 
       setState(() => _isLoading = false);
     } catch (e) {
