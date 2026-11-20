@@ -399,5 +399,130 @@ void main() {
           .getSingle();
       expect(cycleById.questionId, questionId);
     });
+
+    test('问题5：版本校验 周期版本推进后旧卡到新due仍拒绝', () async {
+      // 创建题目和周期
+      await questionRepo.addQuestion(
+        subject: 'Math',
+        questionText: 'Q1',
+        correctAnswer: 'A1',
+        mistakeDate: LearningDate.parse('2026-11-19'),
+      );
+      final questionId = (await db.select(db.mistakeQuestions).getSingle()).id;
+
+      await reviewRepo.createInitialCycle(
+        questionId: questionId,
+        formalizedDate: LearningDate.parse('2026-11-19'),
+      );
+
+      // 读取卡片快照（当前版本）
+      var cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      var question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
+      final oldCycleVersion = cycle.version;
+
+      // 提交一次成功，推进周期版本
+      var result1 = await reviewRepo.submitScheduledReview(
+        questionId: questionId,
+        result: ReviewResult.know,
+        submittedDate: LearningDate.parse('2026-11-20'),
+        hasAnswer: true,
+        hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
+      );
+      expect(result1, isA<SubmissionSuccess>());
+
+      // 重新读取周期，版本已递增
+      cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      expect(cycle.version, greaterThan(oldCycleVersion),
+          reason: '周期版本应递增');
+
+      // 到新due日期（11-24），但使用旧版本快照尝试提交
+      question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
+      final result2 = await reviewRepo.submitScheduledReview(
+        questionId: questionId,
+        result: ReviewResult.know,
+        submittedDate: LearningDate.parse('2026-11-24'),
+        hasAnswer: true,
+        hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: oldCycleVersion, // 使用旧版本
+      );
+
+      // 验证：旧版本卡片到新due日期仍被拒绝
+      expect(result2, isA<SubmissionStaleCycle>());
+
+      // 验证：零写
+      final events = await (db.select(db.reviewEvents)
+            ..where((e) => e.learningDate.equals('2026-11-24')))
+          .get();
+      expect(events.length, 0, reason: '不应写入新事件');
+    });
+
+    test('问题5：版本校验 归档后恢复，旧卡拒绝', () async {
+      // 创建题目和周期
+      await questionRepo.addQuestion(
+        subject: 'Math',
+        questionText: 'Q1',
+        correctAnswer: 'A1',
+        mistakeDate: LearningDate.parse('2026-11-19'),
+      );
+      final questionId = (await db.select(db.mistakeQuestions).getSingle()).id;
+
+      await reviewRepo.createInitialCycle(
+        questionId: questionId,
+        formalizedDate: LearningDate.parse('2026-11-19'),
+      );
+
+      // 读取归档前的卡片快照
+      final cycleBeforeArchive = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final questionBeforeArchive = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
+
+      // 归档题目（递增version）
+      await questionRepo.archiveQuestion(
+        questionId: questionId,
+        operationDate: LearningDate.parse('2026-11-20'),
+      );
+
+      // 恢复题目（再次递增version）
+      await questionRepo.restoreQuestion(
+        questionId: questionId,
+        operationDate: LearningDate.parse('2026-11-20'),
+      );
+
+      // 使用归档前的旧版本卡片尝试提交
+      final result = await reviewRepo.submitScheduledReview(
+        questionId: questionId,
+        result: ReviewResult.know,
+        submittedDate: LearningDate.parse('2026-11-20'),
+        hasAnswer: true,
+        hasConfirmedVerification: false,
+        expectedQuestionVersion: questionBeforeArchive.version, // 旧version
+        expectedCycleId: cycleBeforeArchive.id,
+        expectedCycleVersion: cycleBeforeArchive.version,
+      );
+
+      // 验证：旧卡被拒绝（version已变）
+      expect(result, isA<SubmissionStaleQuestion>());
+
+      // 验证：零写
+      final events = await db.select(db.reviewEvents).get();
+      expect(events.length, 0, reason: '不应写入事件');
+    });
   });
 }
