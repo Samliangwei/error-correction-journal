@@ -175,8 +175,9 @@ class MistakeQuestionRepository {
       await planRepo.addMember(
         planId: planId,
         questionId: candidates[i],
-        orderIndex: nextOrder++,
+        orderIndex: nextOrder,
       );
+      nextOrder++;
     }
   }
 

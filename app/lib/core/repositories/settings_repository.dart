@@ -39,13 +39,11 @@ class SettingsRepository {
     final tomorrow = today.addDays(1);
 
     // 解析现有待生效
-    final currentN = settings.dailyTargetN;
     final currentPendingStr = await db.customSelect(
       'SELECT daily_target_pending_n, daily_target_effective_from FROM settings WHERE id = ?',
       variables: [Variable.withInt(settings.id)],
     ).getSingleOrNull();
 
-    int? pendingN;
     LearningDate? effectiveFrom;
 
     if (currentPendingStr != null) {
