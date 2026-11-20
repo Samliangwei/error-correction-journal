@@ -111,7 +111,7 @@ class ReviewRepository {
     final targetN = await settingsRepo.getDailyTargetN();
     final plan = await planRepo.getOrCreatePlan(date: submittedDate, targetN: targetN);
 
-    // 已在计划中
+    // 已在计划中（检查同题同日重复确认）
     if (await planRepo.isQuestionInPlan(planId: plan.id, questionId: questionId)) {
       return CapacityAvailable(plan.id);
     }
@@ -132,20 +132,22 @@ class ReviewRepository {
       return CapacityFullNeedsConfirmation(plan.members.length, plan.capacityC);
     }
 
-    // 满额但已确认：重检后扩容
+    // 满额但已确认：重检后扩容C+1
     final planRecheck = await planRepo.getPlan(submittedDate);
-    if (planRecheck == null || planRecheck.isFull) {
-      // 仍满额，扩容加入
-      final nextOrder = await planRepo.getNextOrderIndex(plan.id);
-      await planRepo.addMember(
-        planId: plan.id,
-        questionId: questionId,
-        orderIndex: nextOrder,
-      );
-      return CapacityAvailable(plan.id);
+    if (planRecheck != null && await planRepo.isQuestionInPlan(planId: planRecheck.id, questionId: questionId)) {
+      // 已在计划中（同题重复确认），零扩容
+      return CapacityAvailable(planRecheck.id);
     }
 
-    // 重检后有空位，直接预留
+    // 扩容C+1
+    await (db.update(db.dailyPlans)
+          ..where((p) => p.id.equals(plan.id)))
+        .write(DailyPlansCompanion(
+      capacityC: Value(plan.capacityC + 1),
+      updatedAt: Value(DateTime.now()),
+    ));
+
+    // 加入成员
     final nextOrder = await planRepo.getNextOrderIndex(plan.id);
     await planRepo.addMember(
       planId: plan.id,

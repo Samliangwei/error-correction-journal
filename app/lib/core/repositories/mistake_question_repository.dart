@@ -135,7 +135,7 @@ class MistakeQuestionRepository {
             ..where((q) => q.id.equals(questionId)))
           .write(MistakeQuestionsCompanion(
         isArchived: const Value(false),
-        deletedAt: const Value.absent(), // 清除deletedAt
+        deletedAt: Value(null), // 清除deletedAt
         updatedAt: Value(DateTime.now()),
       ));
 
@@ -216,27 +216,29 @@ class MistakeQuestionRepository {
     required LearningDate date,
     String? reserveForQuestionId,
   }) async {
-    final targetN = await settingsRepo.getDailyTargetN();
-    final plan = await planRepo.getOrCreatePlan(date: date, targetN: targetN);
+    await db.transaction(() async {
+      final targetN = await settingsRepo.getDailyTargetN();
+      final plan = await planRepo.getOrCreatePlan(date: date, targetN: targetN);
 
-    // 如果需要预留旧卡
-    if (reserveForQuestionId != null) {
-      final alreadyIn = await planRepo.isQuestionInPlan(
-        planId: plan.id,
-        questionId: reserveForQuestionId,
-      );
-
-      if (!alreadyIn && !plan.isFull) {
-        final nextOrder = await planRepo.getNextOrderIndex(plan.id);
-        await planRepo.addMember(
+      // 如果需要预留旧卡
+      if (reserveForQuestionId != null) {
+        final alreadyIn = await planRepo.isQuestionInPlan(
           planId: plan.id,
           questionId: reserveForQuestionId,
-          orderIndex: nextOrder,
         );
-      }
-    }
 
-    // 填充剩余容量
-    await _backfillPlan(plan.id, date);
+        if (!alreadyIn && !plan.isFull) {
+          final nextOrder = await planRepo.getNextOrderIndex(plan.id);
+          await planRepo.addMember(
+            planId: plan.id,
+            questionId: reserveForQuestionId,
+            orderIndex: nextOrder,
+          );
+        }
+      }
+
+      // 填充剩余容量
+      await _backfillPlan(plan.id, date);
+    });
   }
 }

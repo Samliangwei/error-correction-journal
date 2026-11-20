@@ -132,6 +132,11 @@ class DailyPlanMembers extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+        {planId, questionId}, // 计划+题目唯一
+      ];
 }
 
 // 设置

@@ -3113,6 +3113,10 @@ class $DailyPlanMembersTable extends DailyPlanMembers
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {planId, questionId},
+      ];
+  @override
   DailyPlanMember map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DailyPlanMember(

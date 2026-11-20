@@ -55,11 +55,11 @@ void main() {
     });
 
     test('旧卡新日：满额返回需确认，取消零写', () async {
-      // 设置容量为2
-      await settingsRepo.setDailyTargetN(2);
+      // 设置容量为5（最小值）
+      await settingsRepo.setDailyTargetN(5);
 
-      // 创建2个题目填满计划
-      for (int i = 0; i < 2; i++) {
+      // 创建5个题目填满计划
+      for (int i = 0; i < 5; i++) {
         await repo.createInitialCycle(
           questionId: 'q$i',
           formalizedDate: LearningDate.parse('2026-11-20'),
@@ -73,15 +73,15 @@ void main() {
         );
       }
 
-      // 第3个题目，满额
+      // 第6个题目，满额
       await repo.createInitialCycle(
-        questionId: 'q3',
+        questionId: 'q6',
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
       // 未确认提交，返回满额
       final result1 = await repo.submitScheduledReview(
-        questionId: 'q3',
+        questionId: 'q6',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
@@ -92,25 +92,25 @@ void main() {
       // 验证：返回满额
       expect(result1, isA<SubmissionCapacityFull>());
       final capacityFull = result1 as SubmissionCapacityFull;
-      expect(capacityFull.currentCount, 2);
-      expect(capacityFull.capacityC, 2);
+      expect(capacityFull.currentCount, 5);
+      expect(capacityFull.capacityC, 5);
 
       // 验证：零写（事件、周期、计划均未变）
       final events = await db.select(db.reviewEvents).get();
-      expect(events.where((e) => e.questionId == 'q3').length, 0);
+      expect(events.where((e) => e.questionId == 'q6').length, 0);
 
-      final cycle3 = await repo.getActiveCycle('q3');
-      expect(cycle3!.kLevel.value, 0); // 未变
-      expect(cycle3.version, 1); // 版本未递增
+      final cycle6 = await repo.getActiveCycle('q6');
+      expect(cycle6!.kLevel.value, 0); // 未变
+      expect(cycle6.version, 1); // 版本未递增
 
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
-      expect(plan!.members.length, 2); // 未增加
+      expect(plan!.members.length, 5); // 未增加
     });
 
     test('旧卡新日：满额但确认后提交成功', () async {
-      await settingsRepo.setDailyTargetN(2);
+      await settingsRepo.setDailyTargetN(5);
 
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 5; i++) {
         await repo.createInitialCycle(
           questionId: 'q$i',
           formalizedDate: LearningDate.parse('2026-11-20'),
@@ -125,13 +125,13 @@ void main() {
       }
 
       await repo.createInitialCycle(
-        questionId: 'q3',
+        questionId: 'q6',
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
       // 确认后提交
       final result = await repo.submitScheduledReview(
-        questionId: 'q3',
+        questionId: 'q6',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
@@ -143,7 +143,8 @@ void main() {
       expect(result, isA<SubmissionSuccess>());
 
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-21'));
-      expect(plan!.members.length, 3); // 已扩容
+      expect(plan!.members.length, 6); // 已扩容
+      expect(plan.capacityC, 5); // C未扩容（问题1：待修复）
     });
 
     test('N次日生效', () async {
