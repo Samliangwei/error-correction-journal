@@ -193,10 +193,11 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
       appBar: AppBar(
         title: const Text('错题详情'),
         actions: [
-          if (!question.isDeleted && !question.isArchived)
+          if (question.deletedAt == null && !question.isArchived)
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => context.push('/questions/${widget.questionId}/edit'),
+              onPressed: () =>
+                  context.push('/questions/${widget.questionId}/edit'),
               tooltip: '编辑',
             ),
           PopupMenuButton<String>(
@@ -214,7 +215,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
               }
             },
             itemBuilder: (context) => [
-              if (!question.isDeleted && !question.isArchived)
+              if (question.deletedAt == null && !question.isArchived)
                 const PopupMenuItem(
                   value: 'archive',
                   child: Row(
@@ -225,7 +226,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
                     ],
                   ),
                 ),
-              if (!question.isDeleted && !question.isArchived)
+              if (question.deletedAt == null && !question.isArchived)
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
