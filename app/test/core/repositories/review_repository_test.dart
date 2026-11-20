@@ -23,7 +23,7 @@ void main() {
 
   group('ReviewRepository - 持久化集成', () {
     test('创建初始周期并持久化', () async {
-      final questionId = 'q1';
+      const questionId = 'q1';
       final formalizedDate = LearningDate.parse('2026-11-20');
 
       // When: 创建初始周期
@@ -47,7 +47,7 @@ void main() {
     });
 
     test('获取活动周期', () async {
-      final questionId = 'q1';
+      const questionId = 'q1';
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -63,7 +63,7 @@ void main() {
     });
 
     test('提交复习（事务集成：事件+周期）', () async {
-      final questionId = 'q1';
+      const questionId = 'q1';
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),
@@ -100,7 +100,7 @@ void main() {
     });
 
     test('同题同日重复提交（幂等性）', () async {
-      final questionId = 'q1';
+      const questionId = 'q1';
       final learningDate = LearningDate.parse('2026-11-21');
 
       await repo.createInitialCycle(
@@ -137,7 +137,7 @@ void main() {
     });
 
     test('再次出错：新周期k0/明日（事务）', () async {
-      final questionId = 'q1';
+      const questionId = 'q1';
       final operationDate = LearningDate.parse('2026-11-25');
 
       // Given: 旧周期k2
@@ -148,7 +148,7 @@ void main() {
       // 手动更新到k2
       await (db.update(db.reviewCycles)
             ..where((c) => c.questionId.equals(questionId)))
-          .write(ReviewCyclesCompanion(kLevel: const Value(2)));
+          .write(const ReviewCyclesCompanion(kLevel: Value(2)));
 
       // When: 再次出错
       await repo.markAsMistakeAgain(
@@ -179,7 +179,7 @@ void main() {
     });
 
     test('再次出错同日幂等', () async {
-      final questionId = 'q1';
+      const questionId = 'q1';
       final operationDate = LearningDate.parse('2026-11-25');
 
       await repo.createInitialCycle(
@@ -214,7 +214,7 @@ void main() {
     test('数据库持久化（概念验证）', () async {
       // 注意：内存数据库关闭后数据会丢失
       // 真实文件数据库持久化测试见集成测试
-      final questionId = 'q1';
+      const questionId = 'q1';
       await repo.createInitialCycle(
         questionId: questionId,
         formalizedDate: LearningDate.parse('2026-11-20'),

@@ -10,7 +10,6 @@ import '../scheduling/review_event.dart' as domain;
 import '../scheduling/review_result.dart';
 import '../scheduling/review_submission.dart';
 import '../scheduling/scheduler.dart';
-import '../scheduling/idempotency_guard.dart';
 
 /// Repository实现（将领域模型映射到数据库）
 class ReviewRepository {
