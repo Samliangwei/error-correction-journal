@@ -435,6 +435,9 @@ class ReviewRepository {
               createdAt: DateTime.now(),
             ));
 
+        // 故障注入点：事件写入后
+        faultInjection.triggerAfterEventInsert();
+
         // 5.3 更新周期（问题5：条件更新检查行数）
         final updatedRows = await (db.update(db.reviewCycles)
               ..where((c) =>
