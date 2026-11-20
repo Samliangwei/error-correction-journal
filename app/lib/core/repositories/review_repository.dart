@@ -516,10 +516,33 @@ class ReviewRepository {
         }
       }
 
-      // 3. 获取旧周期（用于创建新周期）
+      // 3. 获取并关闭旧周期
       final oldCycle = await getActiveCycle(questionId);
+      if (oldCycle != null) {
+        await (db.update(db.reviewCycles)
+              ..where((c) =>
+                  c.questionId.equals(questionId) & c.isActive.equals(true)))
+            .write(ReviewCyclesCompanion(
+          isActive: const Value(false),
+          updatedAt: Value(DateTime.now()),
+        ));
+      }
 
-      // 4. 创建新周期
+      // 4. 写入再错标记（提前写入以便验证事务回滚）
+      await db
+          .into(db.mistakeAgainMarks)
+          .insert(MistakeAgainMarksCompanion.insert(
+            id: const Uuid().v4(),
+            questionId: questionId,
+            operationDate: operationDate.value,
+            newCycleNumber: oldCycle != null ? oldCycle.cycleNumber + 1 : 1,
+            createdAt: DateTime.now(),
+          ));
+
+      // 故障注入点：再错操作写入后
+      faultInjection.triggerAfterMistakeAgainInsert();
+
+      // 5. 创建新周期
       final newCycle = Scheduler.createNewCycleForMistakeAgain(
         questionId: questionId,
         previousCycleNumber: oldCycle?.cycleNumber ?? 0,
@@ -537,8 +560,6 @@ class ReviewRepository {
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ));
-
-      // 5. 记录再错标记
       await db
           .into(db.mistakeAgainMarks)
           .insert(MistakeAgainMarksCompanion.insert(
