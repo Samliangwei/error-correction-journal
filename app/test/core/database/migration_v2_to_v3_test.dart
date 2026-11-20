@@ -187,11 +187,11 @@ void main() {
       expect(q1Member.orderIndex, 3, reason: '保留最早顺序order=3');
       // 稳定id：MIN(id)='member1'
       expect(q1Member.id, 'member1', reason: '稳定id选择字典序最小');
-      // 最早created_at
-      expect(q1Member.createdAt.millisecondsSinceEpoch, now - 3000,
+      // 最早created_at (Drift存储为微秒)
+      expect(q1Member.createdAt.millisecondsSinceEpoch, (now - 3000) * 1000,
           reason: '保留最早创建时间');
-      // 最新updated_at
-      expect(q1Member.updatedAt.millisecondsSinceEpoch, now,
+      // 最新updated_at (Drift存储为微秒)
+      expect(q1Member.updatedAt.millisecondsSinceEpoch, now * 1000,
           reason: '保留最新更新时间');
 
       // 2. 验证q2未受影响
