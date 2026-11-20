@@ -470,7 +470,22 @@ class ReviewRepository {
     bool skipPlanUpdate = false,
   }) async {
     await db.transaction(() async {
-      // 1. 检查同日幂等
+      // 1. 生命周期检查
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingleOrNull();
+
+      if (question == null) {
+        throw StateError('Question not found: $questionId');
+      }
+      if (question.isArchived) {
+        throw StateError('Question is archived: $questionId');
+      }
+      if (question.deletedAt != null) {
+        throw StateError('Question is deleted: $questionId');
+      }
+
+      // 2. 检查同日幂等
       final existingMark = await (db.select(db.mistakeAgainMarks)
             ..where((m) =>
                 m.questionId.equals(questionId) &
@@ -501,17 +516,8 @@ class ReviewRepository {
         }
       }
 
-      // 3. 关闭旧周期
+      // 3. 获取旧周期（用于创建新周期）
       final oldCycle = await getActiveCycle(questionId);
-      if (oldCycle != null) {
-        await (db.update(db.reviewCycles)
-              ..where((c) =>
-                  c.questionId.equals(questionId) & c.isActive.equals(true)))
-            .write(ReviewCyclesCompanion(
-          isActive: const Value(false),
-          updatedAt: Value(DateTime.now()),
-        ));
-      }
 
       // 4. 创建新周期
       final newCycle = Scheduler.createNewCycleForMistakeAgain(
