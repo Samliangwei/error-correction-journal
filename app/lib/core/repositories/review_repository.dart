@@ -126,7 +126,7 @@ class ReviewRepository {
       return CapacityAvailable(plan.id);
     }
 
-    // 有剩余容量：预留+补满（问题6）
+    // 有剩余容量：预留+补满
     if (!plan.isFull) {
       final nextOrder = await planRepo.getNextOrderIndex(plan.id);
       await planRepo.addMember(
@@ -135,21 +135,10 @@ class ReviewRepository {
         orderIndex: nextOrder,
       );
 
-      // 补满到N（问题6）
-      if (confirmed) {
-        await _backfillPlanToN(plan.id, submittedDate, targetN);
+      // 补满到min(N, 合格数)（无需确认）
+      await _backfillPlanToN(plan.id, submittedDate, targetN);
 
-        // 更新C为实际成员数
-        final finalPlan = await planRepo.getPlan(submittedDate);
-        if (finalPlan != null) {
-          await (db.update(db.dailyPlans)
-                ..where((p) => p.id.equals(finalPlan.id)))
-              .write(DailyPlansCompanion(
-            capacityC: Value(finalPlan.members.length),
-            updatedAt: Value(DateTime.now()),
-          ));
-        }
-      }
+      // C保持不变（初始C=N，不会因为候选少而缩小）
 
       return CapacityAvailable(plan.id);
     }
@@ -159,7 +148,7 @@ class ReviewRepository {
       return CapacityFullNeedsConfirmation(plan.members.length, plan.capacityC);
     }
 
-    // 满额但已确认：重检后扩容+补满（问题6）
+    // 满额但已确认：重检后扩容+补满
     final planRecheck = await planRepo.getPlan(submittedDate);
     if (planRecheck != null &&
         await planRepo.isQuestionInPlan(
@@ -168,13 +157,9 @@ class ReviewRepository {
       return CapacityAvailable(planRecheck.id);
     }
 
-    // 1. 先预留该题（扩容C到当前成员数+1）
-    final newCapacity = plan.members.length + 1;
-    await (db.update(db.dailyPlans)..where((p) => p.id.equals(plan.id)))
-        .write(DailyPlansCompanion(
-      capacityC: Value(newCapacity),
-      updatedAt: Value(DateTime.now()),
-    ));
+    // 1. 先扩容C = members.length + (预留1 + 补位数量)
+    // 但不能提前知道补位数量，所以先扩容到members.length + 1
+    // 最后再根据实际填充数量更新C
 
     // 2. 加入该题成员
     var nextOrder = await planRepo.getNextOrderIndex(plan.id);
@@ -184,17 +169,22 @@ class ReviewRepository {
       orderIndex: nextOrder++,
     );
 
-    // 3. 填满到N（问题6：补满min(N, 合格数)）
+    // 3. 填满到min(N, 合格数)
     await _backfillPlanToN(plan.id, submittedDate, targetN);
 
-    // 4. 获取最终计划并设置C为实际成员数
+    // 4. 获取最终计划并设置C为实际成员数（只增长，不缩小）
     final finalPlan = await planRepo.getPlan(submittedDate);
     if (finalPlan != null) {
-      await (db.update(db.dailyPlans)..where((p) => p.id.equals(finalPlan.id)))
-          .write(DailyPlansCompanion(
-        capacityC: Value(finalPlan.members.length),
-        updatedAt: Value(DateTime.now()),
-      ));
+      final newC = finalPlan.members.length;
+      // 只有当新成员数>原C时才更新（明确追加才增长）
+      if (newC > plan.capacityC) {
+        await (db.update(db.dailyPlans)
+              ..where((p) => p.id.equals(finalPlan.id)))
+            .write(DailyPlansCompanion(
+          capacityC: Value(newC),
+          updatedAt: Value(DateTime.now()),
+        ));
+      }
     }
 
     return CapacityAvailable(plan.id);
