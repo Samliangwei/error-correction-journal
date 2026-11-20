@@ -58,13 +58,28 @@ class MistakeQuestionRepository {
     required LearningDate operationDate,
   }) async {
     await db.transaction(() async {
-      // 1. 更新题目状态
-      await (db.update(db.mistakeQuestions)
+      // 1. 读取当前版本
+      final question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
+          .getSingleOrNull();
+
+      if (question == null) {
+        throw StateError('Question not found: $questionId');
+      }
+
+      // 2. 条件更新：递增版本
+      final updatedRows = await (db.update(db.mistakeQuestions)
+            ..where((q) =>
+                q.id.equals(questionId) & q.version.equals(question.version)))
           .write(MistakeQuestionsCompanion(
         isArchived: const Value(true),
+        version: Value(question.version + 1),
         updatedAt: Value(DateTime.now()),
       ));
+
+      if (updatedRows == 0) {
+        throw StateError('Concurrent modification detected');
+      }
 
       // 2. 检查今日计划
       final todayPlan = await planRepo.getPlan(operationDate);
@@ -96,13 +111,28 @@ class MistakeQuestionRepository {
     required LearningDate operationDate,
   }) async {
     await db.transaction(() async {
-      // 1. 软删除
-      await (db.update(db.mistakeQuestions)
+      // 1. 读取当前版本
+      final question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
+          .getSingleOrNull();
+
+      if (question == null) {
+        throw StateError('Question not found: $questionId');
+      }
+
+      // 2. 条件软删除：递增版本
+      final updatedRows = await (db.update(db.mistakeQuestions)
+            ..where((q) =>
+                q.id.equals(questionId) & q.version.equals(question.version)))
           .write(MistakeQuestionsCompanion(
         deletedAt: Value(DateTime.now()),
+        version: Value(question.version + 1),
         updatedAt: Value(DateTime.now()),
       ));
+
+      if (updatedRows == 0) {
+        throw StateError('Concurrent modification detected');
+      }
 
       // 2. 移出今日计划（无论是否完成）
       final todayPlan = await planRepo.getPlan(operationDate);
@@ -131,13 +161,29 @@ class MistakeQuestionRepository {
     required String questionId,
   }) async {
     await db.transaction(() async {
-      await (db.update(db.mistakeQuestions)
+      // 1. 读取当前版本
+      final question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
+          .getSingleOrNull();
+
+      if (question == null) {
+        throw StateError('Question not found: $questionId');
+      }
+
+      // 2. 条件恢复：递增版本
+      final updatedRows = await (db.update(db.mistakeQuestions)
+            ..where((q) =>
+                q.id.equals(questionId) & q.version.equals(question.version)))
           .write(MistakeQuestionsCompanion(
         isArchived: const Value(false),
-        deletedAt: const Value(null), // 清除deletedAt
+        deletedAt: const Value(null),
+        version: Value(question.version + 1),
         updatedAt: Value(DateTime.now()),
       ));
+
+      if (updatedRows == 0) {
+        throw StateError('Concurrent modification detected');
+      }
 
       // 不重建计划成员（恢复不自动加回计划）
       // 题日幂等约束由数据库保证，恢复后重复提交仍会被拒绝
