@@ -236,7 +236,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
                     ],
                   ),
                 ),
-              if (question.isArchived || question.isDeleted)
+              if (question.isArchived || question.deletedAt != null)
                 const PopupMenuItem(
                   value: 'restore',
                   child: Row(
@@ -285,7 +285,7 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
                       style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ),
-                if (question.isDeleted)
+                if (question.deletedAt != null)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
@@ -306,13 +306,13 @@ class _QuestionDetailPageState extends ConsumerState<QuestionDetailPage> {
               _buildSection('正确答案', question.correctAnswer!,
                   color: AppColors.primary),
             ],
-            if (question.solution != null && question.solution!.isNotEmpty) ...[
+            if (question.myThinking != null && question.myThinking!.isNotEmpty) ...[
               const SizedBox(height: 24),
-              _buildSection('解题思路', question.solution!),
+              _buildSection('我的思考', question.myThinking!),
             ],
-            if (question.mistakeReason != null && question.mistakeReason!.isNotEmpty) ...[
+            if (question.errorNotes != null && question.errorNotes!.isNotEmpty) ...[
               const SizedBox(height: 24),
-              _buildSection('错误原因', question.mistakeReason!,
+              _buildSection('错误原因', question.errorNotes!,
                   color: AppColors.error),
             ],
           ],

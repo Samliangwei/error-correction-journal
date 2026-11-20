@@ -340,9 +340,10 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                       ),
                       const SizedBox(height: 24),
                     ],
-                    if (question.solution != null && question.solution!.isNotEmpty) ...[
+                    if (question.myThinking != null &&
+                        question.myThinking!.isNotEmpty) ...[
                       Text(
-                        '解题思路',
+                        '我的思考',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 12),
@@ -354,13 +355,14 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                           border: Border.all(color: AppColors.divider),
                         ),
                         child: Text(
-                          question.solution!,
+                          question.myThinking!,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),
                       const SizedBox(height: 24),
                     ],
-                    if (question.mistakeReason != null && question.mistakeReason!.isNotEmpty) ...[
+                    if (question.errorNotes != null &&
+                        question.errorNotes!.isNotEmpty) ...[
                       Text(
                         '错误原因',
                         style: Theme.of(context).textTheme.titleMedium,
@@ -371,10 +373,11 @@ class _ReviewPageState extends ConsumerState<ReviewPage> {
                         decoration: BoxDecoration(
                           color: AppColors.error.withOpacity(0.05),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.error.withOpacity(0.3)),
                         ),
                         child: Text(
-                          question.mistakeReason!,
+                          question.errorNotes!,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ),

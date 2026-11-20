@@ -171,8 +171,9 @@ class _QuestionsListPageState extends ConsumerState<QuestionsListPage> {
                   ),
                   const Spacer(),
                   if (question.isArchived)
-                    const Icon(Icons.archive, size: 16, color: AppColors.textSecondary),
-                  if (question.isDeleted)
+                    const Icon(
+                        Icons.archive, size: 16, color: AppColors.textSecondary),
+                  if (question.deletedAt != null)
                     const Icon(Icons.delete, size: 16, color: AppColors.error),
                 ],
               ),
@@ -204,28 +205,33 @@ class _QuestionsListPageState extends ConsumerState<QuestionsListPage> {
 
   Future<List<MistakeQuestion>> _loadQuestions(AppDatabase db) async {
     var query = db.select(db.mistakeQuestions);
-    
-    query = query..where((q) => q.isDeleted.equals(false));
-    
+
+    query = query..where((q) => q.deletedAt.isNull());
+
     if (_selectedSubject != null) {
       query = query..where((q) => q.subject.equals(_selectedSubject!));
     }
-    
+
     if (_searchQuery.isNotEmpty) {
-      query = query..where((q) => q.questionText.contains(_searchQuery));
+      query = query
+        ..where((q) => q.questionText.like('%$_searchQuery%'));
     }
-    
-    query = query..orderBy([(q) => OrderingTerm.desc(q.createdAt)]);
-    
+
+    query = query
+      ..orderBy([
+        (q) => OrderingTerm(
+            expression: q.createdAt, mode: OrderingMode.desc)
+      ]);
+
     return query.get();
   }
 
   Future<List<String>> _loadSubjects() async {
     final db = ref.read(appDatabaseProvider);
-    final questions = await (db.select(db.mistakeQuestions)
-          ..where((q) => q.isDeleted.equals(false)))
-        .get();
-    
+    final questions =
+        await (db.select(db.mistakeQuestions)..where((q) => q.deletedAt.isNull()))
+            .get();
+
     return questions.map((q) => q.subject).toSet().toList()..sort();
   }
 }

@@ -19,9 +19,9 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
   final _subjectController = TextEditingController();
   final _questionController = TextEditingController();
   final _answerController = TextEditingController();
-  final _solutionController = TextEditingController();
-  final _mistakeReasonController = TextEditingController();
-  
+  final _thinkingController = TextEditingController();
+  final _errorNotesController = TextEditingController();
+
   bool _isLoading = false;
   String? _errorMessage;
   bool _isEditing = false;
@@ -39,8 +39,8 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
     _subjectController.dispose();
     _questionController.dispose();
     _answerController.dispose();
-    _solutionController.dispose();
-    _mistakeReasonController.dispose();
+    _thinkingController.dispose();
+    _errorNotesController.dispose();
     super.dispose();
   }
 
@@ -61,8 +61,8 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
       _subjectController.text = question.subject;
       _questionController.text = question.questionText;
       _answerController.text = question.correctAnswer ?? '';
-      _solutionController.text = question.solution ?? '';
-      _mistakeReasonController.text = question.mistakeReason ?? '';
+      _thinkingController.text = question.myThinking ?? '';
+      _errorNotesController.text = question.errorNotes ?? '';
       _isEditing = true;
     } catch (e) {
       setState(() => _errorMessage = '加载失败: $e');
@@ -90,9 +90,15 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
           questionId: widget.questionId!,
           subject: _subjectController.text.trim(),
           questionText: _questionController.text.trim(),
-          correctAnswer: _answerController.text.trim().isEmpty ? null : _answerController.text.trim(),
-          solution: _solutionController.text.trim().isEmpty ? null : _solutionController.text.trim(),
-          mistakeReason: _mistakeReasonController.text.trim().isEmpty ? null : _mistakeReasonController.text.trim(),
+          correctAnswer: _answerController.text.trim().isEmpty
+              ? null
+              : _answerController.text.trim(),
+          myThinking: _thinkingController.text.trim().isEmpty
+              ? null
+              : _thinkingController.text.trim(),
+          errorNotes: _errorNotesController.text.trim().isEmpty
+              ? null
+              : _errorNotesController.text.trim(),
         );
 
         if (mounted) {
@@ -105,9 +111,15 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
         final questionId = await questionRepo.createQuestion(
           subject: _subjectController.text.trim(),
           questionText: _questionController.text.trim(),
-          correctAnswer: _answerController.text.trim().isEmpty ? null : _answerController.text.trim(),
-          solution: _solutionController.text.trim().isEmpty ? null : _solutionController.text.trim(),
-          mistakeReason: _mistakeReasonController.text.trim().isEmpty ? null : _mistakeReasonController.text.trim(),
+          correctAnswer: _answerController.text.trim().isEmpty
+              ? null
+              : _answerController.text.trim(),
+          myThinking: _thinkingController.text.trim().isEmpty
+              ? null
+              : _thinkingController.text.trim(),
+          errorNotes: _errorNotesController.text.trim().isEmpty
+              ? null
+              : _errorNotesController.text.trim(),
           mistakeDate: DateTime.now(),
         );
 
@@ -239,10 +251,10 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _solutionController,
+                      controller: _thinkingController,
                       decoration: const InputDecoration(
-                        labelText: '解题思路',
-                        hintText: '输入解题步骤和方法',
+                        labelText: '我的思考',
+                        hintText: '记录你的解题思路',
                         alignLabelWithHint: true,
                       ),
                       maxLines: 4,
@@ -250,7 +262,7 @@ class _QuestionFormPageState extends ConsumerState<QuestionFormPage> {
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      controller: _mistakeReasonController,
+                      controller: _errorNotesController,
                       decoration: const InputDecoration(
                         labelText: '错误原因',
                         hintText: '记录错在哪里',
