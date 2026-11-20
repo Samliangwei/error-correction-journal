@@ -1,0 +1,409 @@
+openapi: 3.0.3
+info:
+  title: 错题记录 API
+  description: 面向中小学生的错题记录与复习应用后端接口
+  version: 1.0.0
+  contact:
+    name: Error Journal API
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发服务器
+
+tags:
+  - name: health
+    description: 健康检查
+  - name: error-questions
+    description: 错题管理
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: 健康检查
+      description: 检查服务是否正常运行
+      operationId: checkHealth
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: 2024-11-20T07:00:00Z
+
+  /api/v1/error-questions:
+    get:
+      tags:
+        - error-questions
+      summary: 获取错题列表
+      description: 查询用户的错题列表，支持分页和筛选
+      operationId: listErrorQuestions
+      parameters:
+        - name: subject
+          in: query
+          description: 学科筛选
+          schema:
+            type: string
+        - name: mastery_status
+          in: query
+          description: 掌握状态筛选
+          schema:
+            $ref: '#/components/schemas/MasteryStatus'
+        - name: limit
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          description: 偏移量
+          schema:
+            type: integer
+            default: 0
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: 成功返回错题列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ErrorQuestion'
+                  total:
+                    type: integer
+                    description: 总数量
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - error-questions
+      summary: 创建错题
+      description: 创建新的错题记录（幂等，基于 UUID）
+      operationId: createErrorQuestion
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorQuestionCreate'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorQuestion'
+        '200':
+          description: 已存在（幂等）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorQuestion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/error-questions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: 错题 UUID
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags:
+        - error-questions
+      summary: 获取错题详情
+      operationId: getErrorQuestion
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: 成功返回错题详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorQuestion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - error-questions
+      summary: 更新错题
+      operationId: updateErrorQuestion
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorQuestionUpdate'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorQuestion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - error-questions
+      summary: 删除错题
+      description: 软删除错题（设置 deleted_at）
+      operationId: deleteErrorQuestion
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '204':
+          description: 删除成功
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/error-questions/sync:
+    post:
+      tags:
+        - error-questions
+      summary: 批量同步错题
+      description: 客户端上传待同步的错题，服务器返回冲突和成功列表
+      operationId: syncErrorQuestions
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                questions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ErrorQuestionSync'
+      responses:
+        '200':
+          description: 同步完成
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced:
+                    type: array
+                    items:
+                      type: string
+                      format: uuid
+                    description: 成功同步的 ID 列表
+                  conflicts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        reason:
+                          type: string
+                    description: 冲突列表
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    MasteryStatus:
+      type: string
+      enum:
+        - not_mastered
+        - partially_mastered
+        - mastered
+      description: 掌握状态
+
+    ErrorQuestion:
+      type: object
+      required:
+        - id
+        - subject
+        - question
+        - my_answer
+        - correct_answer
+        - reason
+        - mastery_status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: 客户端生成的全局唯一 ID
+        subject:
+          type: string
+          description: 学科（如：语文、数学、英语）
+          example: 数学
+        question:
+          type: string
+          description: 题目内容
+        my_answer:
+          type: string
+          description: 我的错误答案
+        correct_answer:
+          type: string
+          description: 正确解法
+        reason:
+          type: string
+          description: 错因分析
+        mastery_status:
+          $ref: '#/components/schemas/MasteryStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        deleted_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 软删除时间戳
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 最后同步时间
+
+    ErrorQuestionCreate:
+      type: object
+      required:
+        - id
+        - subject
+        - question
+        - my_answer
+        - correct_answer
+        - reason
+        - mastery_status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        question:
+          type: string
+        my_answer:
+          type: string
+        correct_answer:
+          type: string
+        reason:
+          type: string
+        mastery_status:
+          $ref: '#/components/schemas/MasteryStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorQuestionUpdate:
+      type: object
+      properties:
+        subject:
+          type: string
+        question:
+          type: string
+        my_answer:
+          type: string
+        correct_answer:
+          type: string
+        reason:
+          type: string
+        mastery_status:
+          $ref: '#/components/schemas/MasteryStatus'
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorQuestionSync:
+      allOf:
+        - $ref: '#/components/schemas/ErrorQuestionCreate'
+        - type: object
+          properties:
+            deleted_at:
+              type: string
+              format: date-time
+              nullable: true
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        detail:
+          type: string
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: 未授权
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: 简单 API Key 认证（仅限本地开发和个人部署）
