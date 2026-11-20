@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter_test/flutter_test.dart' hide isNotNull;
-import 'package:matcher/matcher.dart' show isNotNull;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:error_journal/core/database/database.dart';
 import 'package:error_journal/core/repositories/daily_plan_repository.dart';
 import 'package:error_journal/core/repositories/review_repository.dart';
@@ -156,7 +155,7 @@ void main() {
 
       // 验证计划成员
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
-      expect(plan, isA<DailyPlan>());
+      expect(plan, isNotNull);
       expect(plan!.capacityC, 5);
 
       final members = plan.members;
