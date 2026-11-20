@@ -298,14 +298,23 @@ void main() {
           .id;
 
       // 首次提交
+      var q1Cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1')))
+          .getSingle();
+      var q1Question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
+      
       await reviewRepo.submitScheduledReview(
         questionId: 'q1',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: q1Question.version,
+        expectedCycleId: q1Cycle.id,
+        expectedCycleVersion: q1Cycle.version,
         capacityConfirmed: true,
-        expectedCycleId: q1CycleId,
       );
 
       // 归档再恢复
@@ -315,6 +324,14 @@ void main() {
       );
       await questionRepo.restoreQuestion(questionId: 'q1');
 
+      // 重新读取更新后的数据
+      q1Cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1')))
+          .getSingle();
+      q1Question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
+
       // 重复提交
       final result2 = await reviewRepo.submitScheduledReview(
         questionId: 'q1',
@@ -322,8 +339,10 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: q1Question.version,
+        expectedCycleId: q1Cycle.id,
+        expectedCycleVersion: q1Cycle.version,
         capacityConfirmed: true,
-        expectedCycleId: q1CycleId,
       );
 
       // 验证：幂等拒绝
