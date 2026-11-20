@@ -51,10 +51,12 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
       // 归档题目
       await questionRepo.archiveQuestion(
@@ -62,14 +64,16 @@ void main() {
         operationDate: LearningDate.parse('2026-11-20'),
       );
 
-      // 尝试提交
+      // 尝试提交（归档后version已变化，旧version应被拒绝）
       final result = await reviewRepo.submitScheduledReview(
         questionId: questionId,
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：拒绝
@@ -104,10 +108,12 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
       // 软删除
       await questionRepo.deleteQuestion(
@@ -115,14 +121,16 @@ void main() {
         operationDate: LearningDate.parse('2026-11-20'),
       );
 
-      // 尝试提交
+      // 尝试提交（删除后version已变化，旧version应被拒绝）
       final result = await reviewRepo.submitScheduledReview(
         questionId: questionId,
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：拒绝
@@ -158,19 +166,23 @@ void main() {
             ..where((c) => c.questionId.equals(questionId)))
           .write(const ReviewCyclesCompanion(kLevel: Value(4)));
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
-      // 尝试提交
+      // 尝试提交（k4已掌握应拒绝）
       final result = await reviewRepo.submitScheduledReview(
         questionId: questionId,
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：拒绝
@@ -199,10 +211,12 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       ); // due=2026-11-20
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
       // 尝试在到期前提交（11-19提交，due=11-20）
       final result = await reviewRepo.submitScheduledReview(
@@ -211,7 +225,9 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-19'), // 未到期
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：拒绝
@@ -244,10 +260,9 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
 
       // 模拟题目被编辑（版本递增）
       await (db.update(db.mistakeQuestions)
@@ -265,8 +280,9 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleId,
         expectedQuestionVersion: 1, // 旧版本
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       // 验证：拒绝
@@ -298,10 +314,12 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final firstCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId)))
-              .getSingle())
-          .id;
+      final firstCycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
       // 模拟再错（创建新周期）
       await reviewRepo.markAsMistakeAgain(
@@ -309,21 +327,23 @@ void main() {
         operationDate: LearningDate.parse('2026-11-20'),
       );
 
-      // 尝试用旧周期ID提交
+      // 尝试用旧周期ID提交（旧周期已失效）
       final result = await reviewRepo.submitScheduledReview(
         questionId: questionId,
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: firstCycleId, // 旧周期ID
+        expectedQuestionVersion: question.version,
+        expectedCycleId: firstCycle.id, // 旧周期ID
+        expectedCycleVersion: firstCycle.version,
       );
 
       // 验证：拒绝
       expect(result, isA<SubmissionStaleCycle>());
       final stale = result as SubmissionStaleCycle;
-      expect(stale.expectedId, firstCycleId);
-      expect(stale.actualId, isNot(firstCycleId)); // 新周期ID不同
+      expect(stale.expectedId, firstCycle.id);
+      expect(stale.actualId, isNot(firstCycle.id)); // 新周期ID不同
 
       // 验证：零写（无新事件）
       final events = await db.select(db.reviewEvents).get();
@@ -350,8 +370,11 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final cycleRow = await (db.select(db.reviewCycles)
+      final cycle = await (db.select(db.reviewCycles)
             ..where((c) => c.questionId.equals(questionId)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
           .getSingle();
 
       // 提交
@@ -361,7 +384,9 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedCycleId: cycleRow.id,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: cycle.id,
+        expectedCycleVersion: cycle.version,
       );
 
       expect(result, isA<SubmissionSuccess>());
@@ -370,7 +395,7 @@ void main() {
       final event = await (db.select(db.reviewEvents)
             ..where((e) => e.questionId.equals(questionId)))
           .getSingle();
-      expect(event.cycleId, cycleRow.id); // 必须是真实的cycle.id，不是随机UUID
+      expect(event.cycleId, cycle.id); // 必须是真实的cycle.id，不是随机UUID
 
       // 验证：可通过cycleId关联查询
       final cycleById = await (db.select(db.reviewCycles)
