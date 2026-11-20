@@ -291,12 +291,6 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      // 获取cycleId
-      final q1CycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q1')))
-              .getSingle())
-          .id;
-
       // 首次提交
       var q1Cycle = await (db.select(db.reviewCycles)
             ..where((c) => c.questionId.equals('q1')))
