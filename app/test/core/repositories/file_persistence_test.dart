@@ -29,7 +29,7 @@ void main() {
     test('关闭重开：完整状态持久化', () async {
       // === 第一次打开数据库：写入数据 ===
       {
-        final db = AppDatabase(NativeDatabase(File(tempPath)));
+        final db = AppDatabase.forTesting(NativeDatabase(File(tempPath)));
         final planRepo = DailyPlanRepository(db);
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
@@ -81,7 +81,7 @@ void main() {
 
       // === 第二次打开数据库：验证持久化 ===
       {
-        final db = AppDatabase(NativeDatabase(File(tempPath)));
+        final db = AppDatabase.forTesting(NativeDatabase(File(tempPath)));
         final planRepo = DailyPlanRepository(db);
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
@@ -130,7 +130,7 @@ void main() {
     test('关闭重开：幂等性跨重启保持', () async {
       // === 第一次打开：提交一次 ===
       {
-        final db = AppDatabase(NativeDatabase(File(tempPath)));
+        final db = AppDatabase.forTesting(NativeDatabase(File(tempPath)));
         final planRepo = DailyPlanRepository(db);
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
@@ -172,7 +172,7 @@ void main() {
 
       // === 第二次打开：重复提交（幂等） ===
       {
-        final db = AppDatabase(NativeDatabase(File(tempPath)));
+        final db = AppDatabase.forTesting(NativeDatabase(File(tempPath)));
         final planRepo = DailyPlanRepository(db);
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
@@ -208,7 +208,7 @@ void main() {
     test('关闭重开：再错幂等跨重启保持', () async {
       // === 第一次打开：首次再错 ===
       {
-        final db = AppDatabase(NativeDatabase(File(tempPath)));
+        final db = AppDatabase.forTesting(NativeDatabase(File(tempPath)));
         final planRepo = DailyPlanRepository(db);
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
@@ -240,7 +240,7 @@ void main() {
 
       // === 第二次打开：重复再错（幂等） ===
       {
-        final db = AppDatabase(NativeDatabase(File(tempPath)));
+        final db = AppDatabase.forTesting(NativeDatabase(File(tempPath)));
         final planRepo = DailyPlanRepository(db);
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
