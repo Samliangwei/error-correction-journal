@@ -51,10 +51,10 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final cycle = await (db.select(db.reviewCycles)
+      final cycleBeforeArchive = await (db.select(db.reviewCycles)
             ..where((c) => c.questionId.equals(questionId)))
           .getSingle();
-      final question = await (db.select(db.mistakeQuestions)
+      final questionBeforeArchive = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
           .getSingle();
 
@@ -71,23 +71,21 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedQuestionVersion: question.version,
-        expectedCycleId: cycle.id,
-        expectedCycleVersion: cycle.version,
+        expectedQuestionVersion: questionBeforeArchive.version,
+        expectedCycleId: cycleBeforeArchive.id,
+        expectedCycleVersion: cycleBeforeArchive.version,
       );
 
-      // 验证：拒绝
-      expect(result, isA<SubmissionQuestionInactive>());
-      final inactive = result as SubmissionQuestionInactive;
-      expect(inactive.reason, contains('archived'));
+      // 验证：拒绝（归档后version递增，旧version被拒）
+      expect(result, isA<SubmissionStaleQuestion>());
 
       // 验证：零写（无事件）
       final events = await db.select(db.reviewEvents).get();
       expect(events.length, 0);
 
-      // 验证：周期未变
-      final cycle = await reviewRepo.getActiveCycle(questionId);
-      expect(cycle!.version, 1); // 版本未递增
+      // 验证：周期未变，但题目version已递增
+      final cycleAfter = await reviewRepo.getActiveCycle(questionId);
+      expect(cycleAfter!.version, 1); // 周期版本未递增
     });
 
     test('软删除题目：拒绝提交+零写', () async {
@@ -108,10 +106,10 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final cycle = await (db.select(db.reviewCycles)
+      final cycleBeforeDelete = await (db.select(db.reviewCycles)
             ..where((c) => c.questionId.equals(questionId)))
           .getSingle();
-      final question = await (db.select(db.mistakeQuestions)
+      final questionBeforeDelete = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
           .getSingle();
 
@@ -128,15 +126,13 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
-        expectedQuestionVersion: question.version,
-        expectedCycleId: cycle.id,
-        expectedCycleVersion: cycle.version,
+        expectedQuestionVersion: questionBeforeDelete.version,
+        expectedCycleId: cycleBeforeDelete.id,
+        expectedCycleVersion: cycleBeforeDelete.version,
       );
 
-      // 验证：拒绝
-      expect(result, isA<SubmissionQuestionInactive>());
-      final inactive = result as SubmissionQuestionInactive;
-      expect(inactive.reason, contains('deleted'));
+      // 验证：拒绝（删除后version递增，旧version被拒）
+      expect(result, isA<SubmissionStaleQuestion>());
 
       // 验证：零写
       final events = await db.select(db.reviewEvents).get();
