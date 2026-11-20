@@ -503,10 +503,7 @@ void main() {
       );
 
       // 恢复题目（再次递增version）
-      await questionRepo.restoreQuestion(
-        questionId: questionId,
-        operationDate: LearningDate.parse('2026-11-20'),
-      );
+      await questionRepo.restoreQuestion(questionId: questionId);
 
       // 使用归档前的旧版本卡片尝试提交
       final result = await reviewRepo.submitScheduledReview(

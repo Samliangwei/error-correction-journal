@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart' hide isNotNull;
+import 'package:matcher/matcher.dart' show isNotNull;
 import 'package:error_journal/core/database/database.dart';
 import 'package:error_journal/core/repositories/daily_plan_repository.dart';
 import 'package:error_journal/core/repositories/review_repository.dart';
