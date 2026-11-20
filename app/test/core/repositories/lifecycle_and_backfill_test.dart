@@ -304,7 +304,7 @@ void main() {
       var q1Question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals('q1')))
           .getSingle();
-      
+
       await reviewRepo.submitScheduledReview(
         questionId: 'q1',
         result: ReviewResult.know,
