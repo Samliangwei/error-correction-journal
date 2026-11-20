@@ -176,7 +176,7 @@ class MistakeQuestionRepository {
         planId: planId,
         questionId: candidates[i],
         orderIndex: nextOrder++,
-      );
+      )
     }
   }
 
