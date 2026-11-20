@@ -139,14 +139,18 @@ class SettingsRepository {
   }
 
   Future<Setting> _getOrCreateSettings() async {
-    final existing = await db.select(db.settings).getSingleOrNull();
-    if (existing != null) return existing;
+    // 先查询所有settings（如果有多条，只取第一条）
+    final allSettings = await db.select(db.settings).get();
+    if (allSettings.isNotEmpty) return allSettings.first;
 
     // 创建默认设置
     await db.into(db.settings).insert(SettingsCompanion.insert(
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ));
-    return (await db.select(db.settings).getSingle());
+    
+    // 再次查询所有，取第一条（防止并发创建多条）
+    final allAfterInsert = await db.select(db.settings).get();
+    return allAfterInsert.first;
   }
 }
