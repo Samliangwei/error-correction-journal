@@ -5,6 +5,7 @@ from app.schemas.error_question import (
     ErrorQuestionSync,
     ErrorQuestionListResponse,
     SyncResponse,
+    ConflictItem,
     MasteryStatus,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "ErrorQuestionSync",
     "ErrorQuestionListResponse",
     "SyncResponse",
+    "ConflictItem",
     "MasteryStatus",
 ]

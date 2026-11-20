@@ -14,6 +14,8 @@ def event_loop():
 
 @pytest.fixture(scope="function")
 async def test_db():
+    from app.models import ErrorQuestion
+    
     engine = create_async_engine(
         "sqlite+aiosqlite:///:memory:",
         echo=False,

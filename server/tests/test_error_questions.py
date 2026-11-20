@@ -5,7 +5,7 @@ from app.config import settings
 
 
 @pytest.mark.asyncio
-async def test_create_error_question():
+async def test_create_error_question(test_db):
     question_data = {
         "id": "test-uuid-1",
         "subject": "数学",
@@ -35,7 +35,7 @@ async def test_create_error_question():
 
 
 @pytest.mark.asyncio
-async def test_list_error_questions():
+async def test_list_error_questions(test_db):
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test"

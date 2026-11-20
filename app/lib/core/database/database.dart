@@ -1,12 +1,8 @@
-import 'dart:io';
 import 'package:drift/drift.dart';
-import 'package:drift/native.dart';
-import 'package:drift/wasm.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
-import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
+// Conditional imports  
+import 'database_native.dart' if (dart.library.html) 'database_web.dart';
 import '../constants/app_constants.dart';
 
 part 'database.g.dart';
@@ -32,6 +28,8 @@ class ErrorQuestions extends Table {
 @DriftDatabase(tables: [ErrorQuestions])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
+  
+  AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
   int get schemaVersion => AppConstants.databaseVersion;
@@ -49,23 +47,5 @@ class AppDatabase extends _$AppDatabase {
 }
 
 LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    if (kIsWeb) {
-      final db = await WasmDatabase.open(
-        databaseName: AppConstants.databaseName,
-        sqlite3Uri: Uri.parse('sqlite3.wasm'),
-        driftWorkerUri: Uri.parse('drift_worker.dart.js'),
-      );
-      return db.resolvedExecutor;
-    }
-
-    if (Platform.isAndroid) {
-      await applyWorkaroundToOpenSqlite3OnOldAndroidVersions();
-    }
-
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, AppConstants.databaseName));
-    
-    return NativeDatabase.createInBackground(file);
-  });
+  return LazyDatabase(() => openDatabaseConnection());
 }
