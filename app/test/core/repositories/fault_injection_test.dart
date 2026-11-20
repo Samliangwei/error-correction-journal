@@ -48,11 +48,13 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q1'))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      var cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1'))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      var question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
 
       // 注入故障：事件写入后抛错
       reviewRepo.faultInjection.afterEventInsert = () {
@@ -67,7 +69,9 @@ void main() {
           submittedDate: LearningDate.parse('2026-11-21'),
           hasAnswer: true,
           hasConfirmedVerification: false,
-          expectedCycleId: cycleId,
+          expectedQuestionVersion: question.version,
+          expectedCycleId: cycle.id,
+          expectedCycleVersion: cycle.version,
         );
         fail('Should have thrown');
       } catch (e) {
@@ -128,11 +132,13 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
-      final cycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q1'))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      var cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q1'))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      var question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q1')))
+          .getSingle();
 
       // 注入故障：周期更新后抛错
       reviewRepo.faultInjection.afterCycleUpdate = () {
@@ -147,7 +153,9 @@ void main() {
           submittedDate: LearningDate.parse('2026-11-21'),
           hasAnswer: true,
           hasConfirmedVerification: false,
-          expectedCycleId: cycleId,
+          expectedQuestionVersion: question.version,
+          expectedCycleId: cycle.id,
+          expectedCycleVersion: cycle.version,
         );
         fail('Should have thrown');
       } catch (e) {
