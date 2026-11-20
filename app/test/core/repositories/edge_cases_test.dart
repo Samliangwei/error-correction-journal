@@ -22,7 +22,8 @@ void main() {
       planRepo = DailyPlanRepository(db);
       settingsRepo = SettingsRepository(db);
       reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
-      questionRepo = MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
+      questionRepo =
+          MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
     });
 
     tearDown(() async {
@@ -33,7 +34,7 @@ void main() {
       // 创建今日计划（使用默认N=20）
       final todayDate = LearningDate.parse('2026-11-20');
       await questionRepo.ensurePlanFilled(date: todayDate);
-      
+
       final todayPlan1 = await planRepo.getPlan(todayDate);
       expect(todayPlan1!.targetN, 20);
       expect(todayPlan1.capacityC, 20);
@@ -51,7 +52,7 @@ void main() {
       // 次日使用最终N
       final tomorrowDate = LearningDate.parse('2026-11-21');
       await questionRepo.ensurePlanFilled(date: tomorrowDate);
-      
+
       final tomorrowPlan = await planRepo.getPlan(tomorrowDate);
       expect(tomorrowPlan!.targetN, 8); // 使用最终设置
       expect(tomorrowPlan.capacityC, 8);
@@ -62,7 +63,9 @@ void main() {
 
       // 创建5个题填满
       for (int i = 0; i < 5; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -81,7 +84,9 @@ void main() {
       );
 
       // 旧卡q6
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q6',
             subject: 'Math',
             questionText: 'Q6',
@@ -95,6 +100,10 @@ void main() {
       );
 
       // 第1次确认
+      final q6CycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals('q6')))
+              .getSingle())
+          .id;
       final result1 = await reviewRepo.submitScheduledReview(
         questionId: 'q6',
         result: ReviewResult.know,
@@ -102,6 +111,7 @@ void main() {
         hasAnswer: true,
         hasConfirmedVerification: false,
         capacityConfirmed: true,
+        expectedCycleId: q6CycleId,
       );
 
       expect(result1, isA<SubmissionSuccess>());
@@ -110,7 +120,9 @@ void main() {
       expect(plan1!.members.length, 6);
 
       // 第2次重复确认（不得再扩C）
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q7',
             subject: 'Math',
             questionText: 'Q7',
@@ -123,6 +135,10 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
+      final q7CycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals('q7')))
+              .getSingle())
+          .id;
       final result2 = await reviewRepo.submitScheduledReview(
         questionId: 'q7',
         result: ReviewResult.know,
@@ -130,6 +146,7 @@ void main() {
         hasAnswer: true,
         hasConfirmedVerification: false,
         capacityConfirmed: true,
+        expectedCycleId: q7CycleId,
       );
 
       expect(result2, isA<SubmissionSuccess>());
@@ -140,7 +157,9 @@ void main() {
 
     test('周期已失效：不能提交', () async {
       const questionId = 'q1';
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q1',
@@ -155,7 +174,9 @@ void main() {
       );
 
       // 模拟周期已失效（如被再错关闭）
-      await db.customStatement('UPDATE review_cycles SET is_active = 0 WHERE question_id = ?', [questionId]);
+      await db.customStatement(
+          'UPDATE review_cycles SET is_active = 0 WHERE question_id = ?',
+          [questionId]);
 
       // 尝试提交
       try {
@@ -179,7 +200,9 @@ void main() {
 
     test('旧卡同日再错：零写', () async {
       const questionId = 'q1';
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: questionId,
             subject: 'Math',
             questionText: 'Q1',
@@ -193,13 +216,20 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      // 今日再错
+      // 获取第一个周期ID（在再错之前）
+      final firstCycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals(questionId))
+                ..where((c) => c.isActive.equals(true)))
+              .getSingle())
+          .id;
+
+      // 今日再错（会创建新周期）
       await questionRepo.markAsMistakeAgainWithBackfill(
         questionId: questionId,
         operationDate: LearningDate.parse('2026-11-20'),
       );
 
-      // 尝试今日排期复习
+      // 尝试用旧周期ID提交（应该被拒绝）
       final result = await reviewRepo.submitScheduledReview(
         questionId: questionId,
         result: ReviewResult.know,
@@ -207,6 +237,7 @@ void main() {
         hasAnswer: true,
         hasConfirmedVerification: false,
         capacityConfirmed: true,
+        expectedCycleId: firstCycleId, // 旧周期ID
       );
 
       // 验证：被禁止
@@ -214,10 +245,10 @@ void main() {
 
       // 验证：零写（未创建事件）
       final events = await db.select(db.reviewEvents).get();
-      final todayEvents = events.where((e) => 
-        e.questionId == questionId && 
-        e.learningDate == '2026-11-20'
-      ).toList();
+      final todayEvents = events
+          .where((e) =>
+              e.questionId == questionId && e.learningDate == '2026-11-20')
+          .toList();
       expect(todayEvents.length, 0);
     });
   });

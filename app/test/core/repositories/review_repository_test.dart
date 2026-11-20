@@ -75,6 +75,11 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
+      final cycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals(questionId)))
+              .getSingle())
+          .id;
+
       // When: 提交会了
       final result = await repo.submitScheduledReview(
         questionId: questionId,
@@ -82,6 +87,7 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedCycleId: cycleId,
       );
 
       // Then: 领域层成功
@@ -114,6 +120,11 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
+      final cycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals(questionId)))
+              .getSingle())
+          .id;
+
       // 首次提交
       await repo.submitScheduledReview(
         questionId: questionId,
@@ -121,6 +132,7 @@ void main() {
         submittedDate: learningDate,
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedCycleId: cycleId,
       );
 
       // When: 重复提交
@@ -130,6 +142,7 @@ void main() {
         submittedDate: learningDate,
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedCycleId: cycleId,
       );
 
       // Then: 幂等拒绝
@@ -226,12 +239,18 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-20'),
       );
 
+      final cycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals(questionId)))
+              .getSingle())
+          .id;
+
       await repo.submitScheduledReview(
         questionId: questionId,
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-21'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedCycleId: cycleId,
       );
 
       // 验证数据已持久化到当前数据库实例

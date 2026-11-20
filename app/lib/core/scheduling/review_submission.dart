@@ -70,6 +70,14 @@ class SubmissionStaleCycle extends SubmissionResult {
   SubmissionStaleCycle({required this.expectedId, required this.actualId});
 }
 
+/// 题目已编辑（旧版本卡）
+class SubmissionStaleQuestion extends SubmissionResult {
+  final int expectedVersion;
+  final int actualVersion;
+  SubmissionStaleQuestion(
+      {required this.expectedVersion, required this.actualVersion});
+}
+
 /// 已掌握
 class SubmissionAlreadyMastered extends SubmissionResult {}
 

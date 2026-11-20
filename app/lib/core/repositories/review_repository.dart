@@ -178,12 +178,14 @@ class ReviewRepository {
     String? expectedCycleId,
   }) async {
     return await db.transaction(() async {
-      // 1. 检查题目生命周期（问题4）
+      // 1. 检查题目生命周期（问题4）和版本（问题5）
       final question = await (db.select(db.mistakeQuestions)
             ..where((q) => q.id.equals(questionId)))
           .getSingleOrNull();
 
-      if (question == null || question.isArchived || question.deletedAt != null) {
+      if (question == null ||
+          question.isArchived ||
+          question.deletedAt != null) {
         return SubmissionQuestionInactive(
           reason: question == null
               ? 'Question not found'
@@ -193,9 +195,19 @@ class ReviewRepository {
         );
       }
 
+      // 检查题目版本（问题5：题目编辑后旧卡失效）
+      if (expectedQuestionVersion != null &&
+          question.version != expectedQuestionVersion) {
+        return SubmissionStaleQuestion(
+          expectedVersion: expectedQuestionVersion,
+          actualVersion: question.version,
+        );
+      }
+
       // 2. 获取当前周期并检查真实周期id（问题5）
       final cycleRow = await (db.select(db.reviewCycles)
-            ..where((c) => c.questionId.equals(questionId) & c.isActive.equals(true)))
+            ..where((c) =>
+                c.questionId.equals(questionId) & c.isActive.equals(true)))
           .getSingleOrNull();
 
       if (cycleRow == null) {
@@ -217,15 +229,17 @@ class ReviewRepository {
 
       if (cycleRow.dueDate != null &&
           cycleRow.dueDate!.compareTo(submittedDate.value) > 0) {
-        return SubmissionNotDueYet(dueDate: LearningDate.parse(cycleRow.dueDate!));
+        return SubmissionNotDueYet(
+            dueDate: LearningDate.parse(cycleRow.dueDate!));
       }
 
       final currentCycle = domain.ReviewCycle(
         questionId: cycleRow.questionId,
         cycleNumber: cycleRow.cycleNumber,
         kLevel: domain.KLevel.fromValue(cycleRow.kLevel),
-        dueDate:
-            cycleRow.dueDate != null ? LearningDate.parse(cycleRow.dueDate!) : null,
+        dueDate: cycleRow.dueDate != null
+            ? LearningDate.parse(cycleRow.dueDate!)
+            : null,
         isActive: cycleRow.isActive,
         version: cycleRow.version,
       );
@@ -285,7 +299,9 @@ class ReviewRepository {
 
         // 5.3 更新周期（问题5：条件更新检查行数）
         final updatedRows = await (db.update(db.reviewCycles)
-              ..where((c) => c.id.equals(cycleRow.id) & c.version.equals(cycleRow.version)))
+              ..where((c) =>
+                  c.id.equals(cycleRow.id) &
+                  c.version.equals(cycleRow.version)))
             .write(ReviewCyclesCompanion(
           kLevel: Value(domainResult.updatedCycle.kLevel.value),
           dueDate: Value(domainResult.updatedCycle.dueDate?.value),
@@ -294,7 +310,8 @@ class ReviewRepository {
         ));
 
         if (updatedRows == 0) {
-          throw StateError('Cycle version conflict: expected ${cycleRow.version}');
+          throw StateError(
+              'Cycle version conflict: expected ${cycleRow.version}');
         }
 
         // 5.4 标记计划完成

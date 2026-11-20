@@ -22,7 +22,8 @@ void main() {
       planRepo = DailyPlanRepository(db);
       settingsRepo = SettingsRepository(db);
       reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
-      questionRepo = MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
+      questionRepo =
+          MistakeQuestionRepository(db, planRepo, reviewRepo, settingsRepo);
     });
 
     tearDown(() async {
@@ -34,7 +35,9 @@ void main() {
 
       // 创建8个候选题（超过容量）
       for (int i = 0; i < 8; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Question $i',
@@ -68,7 +71,9 @@ void main() {
 
       // 创建3个题
       for (int i = 0; i < 3; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -88,12 +93,17 @@ void main() {
       );
 
       // 完成q1
+      final q1CycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals('q1')))
+              .getSingle())
+          .id;
       await reviewRepo.submitScheduledReview(
         questionId: 'q1',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedCycleId: q1CycleId,
       );
 
       // 归档q1
@@ -105,7 +115,8 @@ void main() {
       // 验证：q1仍在计划中（已完成保留）
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       expect(plan!.members.map((m) => m.questionId).contains('q1'), true);
-      expect(plan.members.where((m) => m.questionId == 'q1').first.isCompleted, true);
+      expect(plan.members.where((m) => m.questionId == 'q1').first.isCompleted,
+          true);
     });
 
     test('归档未完成：移出并补位3道候补', () async {
@@ -113,7 +124,9 @@ void main() {
 
       // 创建8个题
       for (int i = 0; i < 8; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -139,7 +152,7 @@ void main() {
       );
 
       final plan = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
-      
+
       // 验证：q0已移出
       expect(plan!.members.map((m) => m.questionId).contains('q0'), false);
 
@@ -157,7 +170,9 @@ void main() {
 
       // 创建6个题
       for (int i = 0; i < 6; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -176,12 +191,17 @@ void main() {
       );
 
       // 完成q0
+      final q0CycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals('q0')))
+              .getSingle())
+          .id;
       await reviewRepo.submitScheduledReview(
         questionId: 'q0',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedCycleId: q0CycleId,
       );
 
       // 删除q0（已完成）
@@ -204,7 +224,9 @@ void main() {
       await settingsRepo.setDailyTargetN(5);
 
       // 创建并归档q1
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q1',
             subject: 'Math',
             questionText: 'Q1',
@@ -236,7 +258,9 @@ void main() {
     });
 
     test('恢复后重复自评：题日幂等保证拒绝', () async {
-      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+      await db
+          .into(db.mistakeQuestions)
+          .insert(MistakeQuestionsCompanion.insert(
             id: 'q1',
             subject: 'Math',
             questionText: 'Q1',
@@ -249,6 +273,12 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
+      // 获取cycleId
+      final q1CycleId = (await (db.select(db.reviewCycles)
+                ..where((c) => c.questionId.equals('q1')))
+              .getSingle())
+          .id;
+
       // 首次提交
       await reviewRepo.submitScheduledReview(
         questionId: 'q1',
@@ -257,6 +287,7 @@ void main() {
         hasAnswer: true,
         hasConfirmedVerification: false,
         capacityConfirmed: true,
+        expectedCycleId: q1CycleId,
       );
 
       // 归档再恢复
@@ -274,6 +305,7 @@ void main() {
         hasAnswer: true,
         hasConfirmedVerification: false,
         capacityConfirmed: true,
+        expectedCycleId: q1CycleId,
       );
 
       // 验证：幂等拒绝
@@ -285,7 +317,9 @@ void main() {
 
       // 创建6个题
       for (int i = 0; i < 6; i++) {
-        await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+        await db
+            .into(db.mistakeQuestions)
+            .insert(MistakeQuestionsCompanion.insert(
               id: 'q$i',
               subject: 'Math',
               questionText: 'Q$i',
@@ -303,8 +337,10 @@ void main() {
         date: LearningDate.parse('2026-11-20'),
       );
 
-      final planBefore = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
-      final membersBefore = planBefore!.members.map((m) => m.questionId).toList();
+      final planBefore =
+          await planRepo.getPlan(LearningDate.parse('2026-11-20'));
+      final membersBefore =
+          planBefore!.members.map((m) => m.questionId).toList();
       expect(membersBefore, ['q0', 'q1', 'q2', 'q3', 'q4']);
 
       // 再错q0（未完成），使用含补位的方法
@@ -313,7 +349,8 @@ void main() {
         operationDate: LearningDate.parse('2026-11-20'),
       );
 
-      final planAfter = await planRepo.getPlan(LearningDate.parse('2026-11-20'));
+      final planAfter =
+          await planRepo.getPlan(LearningDate.parse('2026-11-20'));
       final membersAfter = planAfter!.members.map((m) => m.questionId).toList();
 
       // 验证：q0已退出

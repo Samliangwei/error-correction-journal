@@ -43,10 +43,14 @@ void main() {
       expect(await settingsRepo.getDailyTargetN(), 50);
 
       // 超出拒绝
-      await expectLater(() => settingsRepo.setDailyTargetN(2), throwsArgumentError);
-      await expectLater(() => settingsRepo.setDailyTargetN(3), throwsArgumentError);
-      await expectLater(() => settingsRepo.setDailyTargetN(4), throwsArgumentError);
-      await expectLater(() => settingsRepo.setDailyTargetN(51), throwsArgumentError);
+      await expectLater(
+          () => settingsRepo.setDailyTargetN(2), throwsArgumentError);
+      await expectLater(
+          () => settingsRepo.setDailyTargetN(3), throwsArgumentError);
+      await expectLater(
+          () => settingsRepo.setDailyTargetN(4), throwsArgumentError);
+      await expectLater(
+          () => settingsRepo.setDailyTargetN(51), throwsArgumentError);
     });
 
     test('添加成员到计划，按orderIndex排序', () async {
@@ -118,8 +122,10 @@ void main() {
       final plan = await repo.getOrCreatePlan(date: date, targetN: 20);
       await repo.addMember(planId: plan.id, questionId: 'q1', orderIndex: 0);
 
-      expect(await repo.isQuestionInPlan(planId: plan.id, questionId: 'q1'), true);
-      expect(await repo.isQuestionInPlan(planId: plan.id, questionId: 'q2'), false);
+      expect(
+          await repo.isQuestionInPlan(planId: plan.id, questionId: 'q1'), true);
+      expect(await repo.isQuestionInPlan(planId: plan.id, questionId: 'q2'),
+          false);
     });
   });
 }
