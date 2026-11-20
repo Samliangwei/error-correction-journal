@@ -35,10 +35,10 @@ void main() {
         final settingsRepo = SettingsRepository(db);
         final reviewRepo = ReviewRepository(db, planRepo, settingsRepo);
 
-        // 设置N=5
+        // 设置N=5（清除所有pending状态）
         await settingsRepo.setDailyTargetN(5);
         await db.customStatement(
-            'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL WHERE id = 1');
+            'UPDATE settings SET daily_target_n = 5, daily_target_pending_n = NULL, daily_target_effective_from = NULL WHERE id = 1');
 
         // 创建题目和周期
         await db.into(db.mistakeQuestions).insert(
