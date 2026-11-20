@@ -174,13 +174,61 @@ class ReviewRepository {
     required bool hasAnswer,
     required bool hasConfirmedVerification,
     bool capacityConfirmed = false,
+    int? expectedQuestionVersion,
+    String? expectedCycleId,
   }) async {
     return await db.transaction(() async {
-      // 1. 获取当前周期
-      final currentCycle = await getActiveCycle(questionId);
-      if (currentCycle == null) {
+      // 1. 检查题目生命周期（问题4）
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingleOrNull();
+
+      if (question == null || question.isArchived || question.deletedAt != null) {
+        return SubmissionQuestionInactive(
+          reason: question == null
+              ? 'Question not found'
+              : question.isArchived
+                  ? 'Question is archived'
+                  : 'Question is deleted',
+        );
+      }
+
+      // 2. 获取当前周期并检查真实周期id（问题5）
+      final cycleRow = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId) & c.isActive.equals(true)))
+          .getSingleOrNull();
+
+      if (cycleRow == null) {
         throw StateError('No active cycle for question $questionId');
       }
+
+      // 检查周期id匹配（旧卡校验）
+      if (expectedCycleId != null && cycleRow.id != expectedCycleId) {
+        return SubmissionStaleCycle(
+          expectedId: expectedCycleId,
+          actualId: cycleRow.id,
+        );
+      }
+
+      // 检查k<4、due条件
+      if (cycleRow.kLevel >= 4) {
+        return SubmissionAlreadyMastered();
+      }
+
+      if (cycleRow.dueDate != null &&
+          cycleRow.dueDate!.compareTo(submittedDate.value) > 0) {
+        return SubmissionNotDueYet(dueDate: LearningDate.parse(cycleRow.dueDate!));
+      }
+
+      final currentCycle = domain.ReviewCycle(
+        questionId: cycleRow.questionId,
+        cycleNumber: cycleRow.cycleNumber,
+        kLevel: domain.KLevel.fromValue(cycleRow.kLevel),
+        dueDate:
+            cycleRow.dueDate != null ? LearningDate.parse(cycleRow.dueDate!) : null,
+        isActive: cycleRow.isActive,
+        version: cycleRow.version,
+      );
 
       // 2. 获取今日事件（幂等性）
       final existingEvents = await getTodayEvents(
@@ -221,11 +269,11 @@ class ReviewRepository {
 
         final planId = (capacityResult as CapacityAvailable).planId;
 
-        // 5.2 写入事件
+        // 5.2 写入事件（问题8：使用真实cycleId）
         await db.into(db.reviewEvents).insert(ReviewEventsCompanion.insert(
               id: const Uuid().v4(),
               questionId: domainResult.event.questionId,
-              cycleId: const Uuid().v4(),
+              cycleId: cycleRow.id, // 真实周期id
               cycleNumber: domainResult.event.cycleNumber,
               learningDate: domainResult.event.learningDate.value,
               result: _serializeResult(domainResult.event.result),
@@ -235,16 +283,19 @@ class ReviewRepository {
               createdAt: DateTime.now(),
             ));
 
-        // 5.3 更新周期
-        await (db.update(db.reviewCycles)
-              ..where((c) =>
-                  c.questionId.equals(questionId) & c.isActive.equals(true)))
+        // 5.3 更新周期（问题5：条件更新检查行数）
+        final updatedRows = await (db.update(db.reviewCycles)
+              ..where((c) => c.id.equals(cycleRow.id) & c.version.equals(cycleRow.version)))
             .write(ReviewCyclesCompanion(
           kLevel: Value(domainResult.updatedCycle.kLevel.value),
           dueDate: Value(domainResult.updatedCycle.dueDate?.value),
           version: Value(domainResult.updatedCycle.version),
           updatedAt: Value(DateTime.now()),
         ));
+
+        if (updatedRows == 0) {
+          throw StateError('Cycle version conflict: expected ${cycleRow.version}');
+        }
 
         // 5.4 标记计划完成
         await planRepo.markMemberCompleted(

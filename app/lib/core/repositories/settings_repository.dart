@@ -47,13 +47,9 @@ class SettingsRepository {
     LearningDate? effectiveFrom;
 
     if (currentPendingStr != null) {
-      final pendingValue = currentPendingStr.data['daily_target_pending_n'];
       final effectiveValue =
           currentPendingStr.data['daily_target_effective_from'];
 
-      if (pendingValue != null) {
-        pendingN = pendingValue as int;
-      }
       if (effectiveValue != null) {
         effectiveFrom = LearningDate.parse(effectiveValue as String);
       }

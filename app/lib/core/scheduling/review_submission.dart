@@ -57,6 +57,28 @@ class SubmissionCapacityFull extends SubmissionResult {
   });
 }
 
+/// 题目已失效（归档/删除）
+class SubmissionQuestionInactive extends SubmissionResult {
+  final String reason;
+  SubmissionQuestionInactive({required this.reason});
+}
+
+/// 周期已替换（旧卡）
+class SubmissionStaleCycle extends SubmissionResult {
+  final String expectedId;
+  final String actualId;
+  SubmissionStaleCycle({required this.expectedId, required this.actualId});
+}
+
+/// 已掌握
+class SubmissionAlreadyMastered extends SubmissionResult {}
+
+/// 未到期
+class SubmissionNotDueYet extends SubmissionResult {
+  final LearningDate dueDate;
+  SubmissionNotDueYet({required this.dueDate});
+}
+
 /// 复习提交服务（领域层）
 class ReviewSubmissionService {
   /// 提交排期复习
