@@ -100,18 +100,22 @@ void main() {
       );
 
       // 第1次确认
-      final q6CycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q6')))
-              .getSingle())
-          .id;
+      final q6Cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q6')))
+          .getSingle();
+      final q6Question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q6')))
+          .getSingle();
       final result1 = await reviewRepo.submitScheduledReview(
         questionId: 'q6',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: q6Question.version,
+        expectedCycleId: q6Cycle.id,
+        expectedCycleVersion: q6Cycle.version,
         capacityConfirmed: true,
-        expectedCycleId: q6CycleId,
       );
 
       expect(result1, isA<SubmissionSuccess>());
@@ -135,18 +139,22 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      final q7CycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals('q7')))
-              .getSingle())
-          .id;
+      final q7Cycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals('q7')))
+          .getSingle();
+      final q7Question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals('q7')))
+          .getSingle();
       final result2 = await reviewRepo.submitScheduledReview(
         questionId: 'q7',
         result: ReviewResult.know,
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: q7Question.version,
+        expectedCycleId: q7Cycle.id,
+        expectedCycleVersion: q7Cycle.version,
         capacityConfirmed: true,
-        expectedCycleId: q7CycleId,
       );
 
       expect(result2, isA<SubmissionSuccess>());
@@ -216,12 +224,14 @@ void main() {
         formalizedDate: LearningDate.parse('2026-11-19'),
       );
 
-      // 获取第一个周期ID（在再错之前）
-      final firstCycleId = (await (db.select(db.reviewCycles)
-                ..where((c) => c.questionId.equals(questionId))
-                ..where((c) => c.isActive.equals(true)))
-              .getSingle())
-          .id;
+      // 获取第一个周期（在再错之前）
+      final firstCycle = await (db.select(db.reviewCycles)
+            ..where((c) => c.questionId.equals(questionId))
+            ..where((c) => c.isActive.equals(true)))
+          .getSingle();
+      final question = await (db.select(db.mistakeQuestions)
+            ..where((q) => q.id.equals(questionId)))
+          .getSingle();
 
       // 今日再错（会创建新周期）
       await questionRepo.markAsMistakeAgainWithBackfill(
@@ -236,8 +246,10 @@ void main() {
         submittedDate: LearningDate.parse('2026-11-20'),
         hasAnswer: true,
         hasConfirmedVerification: false,
+        expectedQuestionVersion: question.version,
+        expectedCycleId: firstCycle.id, // 旧周期ID
+        expectedCycleVersion: firstCycle.version,
         capacityConfirmed: true,
-        expectedCycleId: firstCycleId, // 旧周期ID
       );
 
       // 验证：旧周期被拒绝（版本检查优先于再错检查）
