@@ -402,13 +402,15 @@ void main() {
 
     test('问题5：版本校验 周期版本推进后旧卡到新due仍拒绝', () async {
       // 创建题目和周期
-      await questionRepo.addQuestion(
-        subject: 'Math',
-        questionText: 'Q1',
-        correctAnswer: 'A1',
-        mistakeDate: LearningDate.parse('2026-11-19'),
-      );
-      final questionId = (await db.select(db.mistakeQuestions).getSingle()).id;
+      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+            id: 'q1',
+            subject: 'Math',
+            questionText: 'Q1',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
+      final questionId = 'q1';
 
       await reviewRepo.createInitialCycle(
         questionId: questionId,
@@ -471,13 +473,15 @@ void main() {
 
     test('问题5：版本校验 归档后恢复，旧卡拒绝', () async {
       // 创建题目和周期
-      await questionRepo.addQuestion(
-        subject: 'Math',
-        questionText: 'Q1',
-        correctAnswer: 'A1',
-        mistakeDate: LearningDate.parse('2026-11-19'),
-      );
-      final questionId = (await db.select(db.mistakeQuestions).getSingle()).id;
+      await db.into(db.mistakeQuestions).insert(MistakeQuestionsCompanion.insert(
+            id: 'q2',
+            subject: 'Math',
+            questionText: 'Q2',
+            mistakeDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ));
+      final questionId = 'q2';
 
       await reviewRepo.createInitialCycle(
         questionId: questionId,
@@ -493,16 +497,10 @@ void main() {
           .getSingle();
 
       // 归档题目（递增version）
-      await questionRepo.archiveQuestion(
-        questionId: questionId,
-        operationDate: LearningDate.parse('2026-11-20'),
-      );
+      await questionRepo.archiveQuestion(questionId: questionId);
 
       // 恢复题目（再次递增version）
-      await questionRepo.restoreQuestion(
-        questionId: questionId,
-        operationDate: LearningDate.parse('2026-11-20'),
-      );
+      await questionRepo.restoreQuestion(questionId: questionId);
 
       // 使用归档前的旧版本卡片尝试提交
       final result = await reviewRepo.submitScheduledReview(
