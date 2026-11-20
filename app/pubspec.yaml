@@ -60,6 +60,9 @@ dependencies:
   
   # 本地存储
   shared_preferences: ^2.3.3
+  
+  # 时钟注入（测试用）
+  clock: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +78,7 @@ dev_dependencies:
   
   # 测试
   mockito: ^5.4.4
+  sqlite3: ^2.4.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
